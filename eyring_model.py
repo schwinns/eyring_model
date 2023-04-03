@@ -290,8 +290,6 @@ class EyringModel():
         m, b = np.polyfit(X,Y,1)
         if plot:
             x = np.linspace(X[0], X[-1], num=50)
-            # plt.scatter(X,Y)
-            # plt.plot(x, m*x+b)
             sns.lmplot(x='1/T', y='ln(P h del / kB T lam^2)', data=data, scatter_kws={'alpha':0.75, 'edgecolor':'tab:blue'})
             plt.xlabel('1/T')
             plt.ylabel('ln($P h \delta$ / $k_B T \lambda$)')
@@ -325,91 +323,102 @@ class EyringModel():
 
 if __name__ == '__main__':
 
-    from tabulate import tabulate
+    # Choose what analyses to run
+    compare_effective_barriers = True
+    estimate_dH_dS = False
+    tabulated_comparisons = False
 
+
+    # Inputs for testing barriers
     T = 300
-
-    # Barrier distributions to test
     large_barrier = 30*R*T
     small_barrier = 15*R*T
     sigma = 10*R*T
 
-    model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
-    params = {'mu' : large_barrier, 'sigma' : sigma}
-    model.generate_membrane_barriers(dist='normal', dist_params=params)
-    dG_eff = model.calculate_effective_barrier() / (R*T)
-    model.membrane_barriers = model.membrane_barriers / (R*T)
-    ax = model.plot_distribution(bw='scott', show_hist=False, label='N(30RT, 10RT)')
-    ax.axvline(dG_eff, ls='dashed', c='k', label='N: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+    if compare_effective_barriers:
 
-    params = {'beta' : large_barrier}
-    model.generate_membrane_barriers(dist='exponential', dist_params=params)
-    dG_eff = model.calculate_effective_barrier() / (R*T)
-    model.membrane_barriers = model.membrane_barriers / (R*T)
-    model.plot_distribution(bw='scott', show_hist=False, ax=ax, label='exp(30RT)')
-    ax.axvline(dG_eff, ls='dotted', c='k', label='exp: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+        model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
+        params = {'mu' : large_barrier, 'sigma' : sigma}
+        model.generate_membrane_barriers(dist='normal', dist_params=params)
+        dG_eff = model.calculate_effective_barrier() / (R*T)
+        model.membrane_barriers = model.membrane_barriers / (R*T)
+        ax = model.plot_distribution(bw='scott', show_hist=False, label='N(30RT, 10RT)')
+        ax.axvline(dG_eff, ls='dashed', c='k', label='N: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+
+        params = {'beta' : large_barrier}
+        model.generate_membrane_barriers(dist='exponential', dist_params=params)
+        dG_eff = model.calculate_effective_barrier() / (R*T)
+        model.membrane_barriers = model.membrane_barriers / (R*T)
+        model.plot_distribution(bw='scott', show_hist=False, ax=ax, label='exp(30RT)')
+        ax.axvline(dG_eff, ls='dotted', c='k', label='exp: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+        
+        ax.axvline(large_barrier/R/T, c='r', label='mean')
+        ax.set_xlabel('$\Delta G_{M,j}$ / RT')
+        plt.legend(loc='upper center')
+        plt.savefig('effective_barrier_distribution_comparison.png')
+        plt.show()
     
-    ax.axvline(large_barrier/R/T, c='r', label='mean')
-    ax.set_xlabel('$\Delta G_{M,j}$ / RT')
-    plt.legend(loc='upper center')
-    plt.show()
+    if estimate_dH_dS:
 
+        model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
+        params = {'mu' : large_barrier, 'sigma' : sigma}
+        temps = [250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*10
+        dH, dS = model.calculate_dH_dS(temps, mem_dist='normal', mem_dist_params=params, plot=True)
 
-    model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
-    params = {'mu' : large_barrier, 'sigma' : sigma}
-    temps = [250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*10
-    dH, dS = model.calculate_dH_dS(temps, mem_dist='normal', mem_dist_params=params, plot=True)
-    print(dH, dS)
-#     table = []
-#     for barrier in [small_barrier, large_barrier]:
-        
-#         dist_params = [
-#             {'mu' : barrier}, # equal barriers with mean = barrier
-#             {'mu' : barrier, 'sigma' : sigma}, # normal distribution with mean = barrier
-#             {'beta' : barrier}, # exponential distribution with mean = barrier
-#             {'a' : 1/2 * barrier, 'b' : 3/2 * barrier} # gives uniform distribution with mean = barrier
-#         ]
-        
-#         for d, dist in enumerate(['equal', 'normal', 'exponential', 'uniform']):
+    if tabulated_comparisons:
+
+        from tabulate import tabulate
+
+        table = []
+        for barrier in [small_barrier, large_barrier]:
             
-#             mem_params = dist_params[d]
-#             model = EyringModel(T=T)
-#             model.generate_membrane_barriers(dist, mem_params)
-#             P = model.calculate_permeability(T=T)
-#             row = [dist, '{}RT'.format(int(barrier / R / T)), P]
-#             table.append(row)
+            dist_params = [
+                {'mu' : barrier}, # equal barriers with mean = barrier
+                {'mu' : barrier, 'sigma' : sigma}, # normal distribution with mean = barrier
+                {'beta' : barrier}, # exponential distribution with mean = barrier
+                {'a' : 1/2 * barrier, 'b' : 3/2 * barrier} # gives uniform distribution with mean = barrier
+            ]
+            
+            for d, dist in enumerate(['equal', 'normal', 'exponential', 'uniform']):
+                
+                mem_params = dist_params[d]
+                model = EyringModel(T=T)
+                model.generate_membrane_barriers(dist, mem_params)
+                P = model.calculate_permeability(T=T)
+                row = [dist, '{}RT'.format(int(barrier / R / T)), P]
+                table.append(row)
 
 
-#     print()
-#     print(tabulate(table, headers=['Membrane distribution', 'Average barrier', 'Permeability (L/m^2/h)']))
+        print()
+        print(tabulate(table, headers=['Membrane distribution', 'Average barrier', 'Permeability (L/m^2/h)']))
 
 
-# # Jump length distributions to test
-# large_jump = 5
-# small_jump = 0.5
-# sigma = 0.5
-# mem_params = {'mu' : 15*R*T, 'sigma' : R*T}
+        # Jump length distributions to test
+        large_jump = 5
+        small_jump = 0.5
+        sigma = 0.5
+        mem_params = {'mu' : 15*R*T, 'sigma' : R*T}
 
-# table = []
-# for jump in [small_jump, large_jump]:
-    
-#     dist_params = [
-#         {'mu' : jump}, # equal jumps with mean = jump
-#         {'mu' : jump, 'sigma' : sigma}, # normal distribution with mean = jump
-#         {'beta' : jump}, # exponential distribution with mean = jump
-#         {'a' : 1/2 * jump, 'b' : 3/2 * jump} # gives uniform distribution with mean = jump
-#         ]
-    
-#     for d, dist in enumerate(['equal', 'normal', 'exponential', 'uniform']):
-        
-#         jump_params = dist_params[d]
-#         model = EyringModel(T=T)
-#         model.generate_jump_distribution(dist, dist_params[d])
-#         model.generate_membrane_barriers(dist_params=mem_params)
-#         P = model.calculate_permeability(T=T)
-#         row = [dist, jump, P]
-#         table.append(row)
+        table = []
+        for jump in [small_jump, large_jump]:
+            
+            dist_params = [
+                {'mu' : jump}, # equal jumps with mean = jump
+                {'mu' : jump, 'sigma' : sigma}, # normal distribution with mean = jump
+                {'beta' : jump}, # exponential distribution with mean = jump
+                {'a' : 1/2 * jump, 'b' : 3/2 * jump} # gives uniform distribution with mean = jump
+                ]
+            
+            for d, dist in enumerate(['equal', 'normal', 'exponential', 'uniform']):
+                
+                jump_params = dist_params[d]
+                model = EyringModel(T=T)
+                model.generate_jump_distribution(dist, dist_params[d])
+                model.generate_membrane_barriers(dist_params=mem_params)
+                P = model.calculate_permeability(T=T)
+                row = [dist, jump, P]
+                table.append(row)
 
 
-# print()
-# print(tabulate(table, headers=['Jump distribution', 'Average jump', 'Permeability (L/m^2/h)']))
+        print()
+        print(tabulate(table, headers=['Jump distribution', 'Average jump', 'Permeability (L/m^2/h)']))
