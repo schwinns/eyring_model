@@ -295,7 +295,7 @@ class EyringModel():
             plt.ylabel('ln($P h \delta$ / $k_B T \lambda$)')
             xmin, xmax = plt.xlim()
             ymin, ymax = plt.ylim()
-            plt.text(xmax*0.95, ymax*0.9, 'dH = {:.4f}\ndS = {:.4f}'.format(-m*R, b*R), ha='right')
+            plt.text(xmax*0.95, ymax*1.05, 'dH = {:.4f}\ndS = {:.4f}'.format(-m*R, b*R), ha='right')
             plt.show()
             
         dH = -m*R
@@ -324,7 +324,8 @@ class EyringModel():
 if __name__ == '__main__':
 
     # Choose what analyses to run
-    compare_effective_barriers = True
+    parallel_pores = True
+    compare_effective_barriers = False
     estimate_dH_dS = False
     tabulated_comparisons = False
 
@@ -334,6 +335,25 @@ if __name__ == '__main__':
     large_barrier = 30*R*T
     small_barrier = 15*R*T
     sigma = 10*R*T
+
+    if parallel_pores:
+
+        from tqdm import tqdm
+
+        n_pores = 10**6
+
+        model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
+        params = {'mu' : large_barrier, 'sigma' : sigma}
+
+        permeabilities = np.zeros(n_pores)
+        for n in tqdm(range(n_pores)):
+            model.generate_membrane_barriers(dist='normal', dist_params=params)
+            permeabilities[n] = model.calculate_permeability()
+
+        # sns.histplot(permeabilities, bins=100, stat='density')
+        sns.kdeplot(permeabilities, bw_method='scott', fill=True)
+        print(permeabilities.sum())
+        plt.show()
 
     if compare_effective_barriers:
 
