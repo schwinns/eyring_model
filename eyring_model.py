@@ -8,11 +8,11 @@ from exceptions import *
 
 # Define global constants
 global kB 
-kB = 1.380649 * 10**-23    # Boltzmann
+kB = 1.380649 * 10**-23    # Boltzmann (m^2 kg / s^2 K)
 global h
-h = 6.62607 * 10**-34      # Planck
+h = 6.62607 * 10**-34      # Planck (m^2 kg / s)
 global R
-R = 1.9858775 * 10**-3     # universal gas (kcal / mol / K)
+R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 
 class EyringModel():
@@ -113,6 +113,7 @@ class EyringModel():
             raise DistributionError('{} is not currently implemented. Try one of {}'.format(dist, dist_options))
 
         # print('Generated {} distribution of membrane barriers with mean {:.4f} and stdev {:.4f}'.format(dist, self.membrane_barriers.mean(), self.membrane_barriers.std()))
+        return self.membrane_barriers
 
     
     def generate_jump_distribution(self, dist=None, dist_params={'mu' : 2}, seed=None):
@@ -179,7 +180,7 @@ class EyringModel():
         # print('Generated {} distribution of jump lengths with mean {:.4f} and stdev {:.4f}'.format(dist, self.jump_lengths.mean(), self.jump_lengths.std()))
 
 
-    def _P_mem_bar(self, T=None):
+    def _P_membrane_barriers(self, T=None):
         '''Calculate membrane transport contribution to permeability from distribution of jump lengths and barriers
         
         :param T: temperature (K), default=None (use self.T)
@@ -196,10 +197,15 @@ class EyringModel():
         else:
             temp = T
 
-        return np.sum( np.exp(self.membrane_barriers / R / temp) / self.jump_lengths ) # units 1/length
+        A = h / (kB*temp) * 60 * 60
+        exp = np.exp(- self.membrane_barriers / (R*temp))
+        lam = self.jump_lengths / 10**10
+        S = np.sum( 1 / (self.jump_lengths * exp) )
+
+        return A*S # units = h / m
 
 
-    def _P_inter_bar(self, T=None):
+    def _P_interfacial_barriers(self, T=None):
         '''Calculate membrane partitioning contribution to permeability from interfacial barriers
         
         :param T: temperature (K), default=None (use self.T)
@@ -216,7 +222,10 @@ class EyringModel():
         else:
             temp = T
 
-        return (self.lam_sm/self.lam_ms) * (kB*temp/h) * np.exp((self.barrier_ms - self.barrier_sm) / R / temp) # units 1/s
+        A = self.lam_sm/self.lam_ms
+        exp = np.exp((self.barrier_ms - self.barrier_sm) / R / temp)
+
+        return A * exp # unitless
 
     
     def calculate_permeability(self, T=None):
@@ -227,9 +236,9 @@ class EyringModel():
         :type T: float
         
         '''
-        num  = self._P_inter_bar(T=T)
-        den = self._P_mem_bar(T=T)
-        return num / den / 10 / (10**9) * 1000 * 60 * 60
+        num  = self._P_interfacial_barriers(T=T)
+        den = self._P_membrane_barriers(T=T)
+        return num / den * 1000 # units = L / m^2 / h
     
 
     def calculate_effective_barrier(self, T=None):
@@ -332,28 +341,79 @@ if __name__ == '__main__':
 
     # Inputs for testing barriers
     T = 300
-    large_barrier = 30*R*T
-    small_barrier = 15*R*T
-    sigma = 10*R*T
+    large_barrier = 18*R*T
+    small_barrier = large_barrier / 2
+    sigma = large_barrier / 3
 
     if parallel_pores:
 
         from tqdm import tqdm
 
-        n_pores = 10**6
+        n_pores = 50
 
         model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
         params = {'mu' : large_barrier, 'sigma' : sigma}
 
         permeabilities = np.zeros(n_pores)
+        eff_barriers = np.zeros(n_pores)
+        mem_dist = np.zeros((model.n_jumps, n_pores))
         for n in tqdm(range(n_pores)):
-            model.generate_membrane_barriers(dist='normal', dist_params=params)
+            mem_dist[:,n] = model.generate_membrane_barriers(dist='normal', dist_params=params)
+            eff_barriers[n] = model.calculate_effective_barrier() / (R*T)
             permeabilities[n] = model.calculate_permeability()
 
-        # sns.histplot(permeabilities, bins=100, stat='density')
-        sns.kdeplot(permeabilities, bw_method='scott', fill=True)
-        print(permeabilities.sum())
+        # sns.kdeplot(permeabilities, bw_method='scott', fill=True)
+        df = pd.DataFrame()
+        df['pores'] = np.arange(1,n_pores+1)
+        df['permeability'] = permeabilities
+        df['effective_barriers'] = eff_barriers
+        df['permeability_percent'] = permeabilities / permeabilities.sum()
+
+        sns.barplot(data=df, x='pores', y='permeability')
+        plt.ylabel('Permeability ($L/m^2 H$)')
+        # plt.axhline(permeabilities.sum(), c='k', ls='dashed')
+        # xmin, xmax = plt.xlim()
+        # ymin, ymax = plt.ylim()
+        # plt.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
         plt.show()
+
+        sns.barplot(data=df, x='pores', y='permeability_percent')
+        plt.ylabel('percentage of permeability')
+        plt.show()
+
+        # sns.kdeplot(eff_barriers, bw_method='scott', fill=True)
+        sns.barplot(data=df, x='pores', y='effective_barriers')
+        plt.ylabel('$\Delta G_{eff}$/RT')
+        plt.show()
+
+        # from matplotlib import cm
+
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # X = np.arange(n_pores)
+        # Y = np.arange(model.n_jumps)
+        # X, Y = np.meshgrid(X, Y)
+        # Z = mem_dist
+        # surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0)
+        # fig.colorbar(surf, label='barriers')
+        # plt.xlabel('pores')
+        # plt.ylabel('thickness')
+        # plt.show()
+
+        # fig = plt.figure()
+        # ax = fig.add_subplot(111, projection='3d')
+        # yticks = np.arange(n_pores)
+        # for k in yticks:
+        #     xs = np.arange(model.n_jumps)
+        #     ys = mem_dist[:,k]
+        #     ax.bar(xs, ys, zs=k, zdir='y', alpha=0.9)
+
+        # ax.set_xlabel('thickness')
+        # ax.set_ylabel('pores')
+        # ax.set_zlabel('barriers')
+        # ax.set_yticks(yticks)
+        # plt.show()
+        
 
     if compare_effective_barriers:
 
