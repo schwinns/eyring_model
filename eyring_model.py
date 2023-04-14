@@ -349,7 +349,7 @@ if __name__ == '__main__':
 
         from tqdm import tqdm
 
-        n_pores = 50
+        n_pores = 10
 
         model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
         params = {'mu' : large_barrier, 'sigma' : sigma}
@@ -367,14 +367,14 @@ if __name__ == '__main__':
         df['pores'] = np.arange(1,n_pores+1)
         df['permeability'] = permeabilities
         df['effective_barriers'] = eff_barriers
-        df['permeability_percent'] = permeabilities / permeabilities.sum()
+        df['permeability_percent'] = permeabilities / permeabilities.sum() * 100
 
         sns.barplot(data=df, x='pores', y='permeability')
         plt.ylabel('Permeability ($L/m^2 H$)')
         # plt.axhline(permeabilities.sum(), c='k', ls='dashed')
-        # xmin, xmax = plt.xlim()
-        # ymin, ymax = plt.ylim()
-        # plt.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
+        xmin, xmax = plt.xlim()
+        ymin, ymax = plt.ylim()
+        plt.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
         plt.show()
 
         sns.barplot(data=df, x='pores', y='permeability_percent')
@@ -386,33 +386,33 @@ if __name__ == '__main__':
         plt.ylabel('$\Delta G_{eff}$/RT')
         plt.show()
 
-        # from matplotlib import cm
+        from matplotlib import cm
 
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # X = np.arange(n_pores)
-        # Y = np.arange(model.n_jumps)
-        # X, Y = np.meshgrid(X, Y)
-        # Z = mem_dist
-        # surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0)
-        # fig.colorbar(surf, label='barriers')
-        # plt.xlabel('pores')
-        # plt.ylabel('thickness')
-        # plt.show()
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        X = np.arange(n_pores)
+        Y = np.arange(model.n_jumps)
+        X, Y = np.meshgrid(X, Y)
+        Z = mem_dist
+        surf = ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=0)
+        fig.colorbar(surf, label='barriers')
+        plt.xlabel('pores')
+        plt.ylabel('thickness')
+        plt.show()
 
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111, projection='3d')
-        # yticks = np.arange(n_pores)
-        # for k in yticks:
-        #     xs = np.arange(model.n_jumps)
-        #     ys = mem_dist[:,k]
-        #     ax.bar(xs, ys, zs=k, zdir='y', alpha=0.9)
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        yticks = np.arange(n_pores)
+        for k in yticks:
+            xs = np.arange(model.n_jumps)
+            ys = mem_dist[:,k]
+            ax.bar(xs, ys, zs=k, zdir='y', alpha=0.9)
 
-        # ax.set_xlabel('thickness')
-        # ax.set_ylabel('pores')
-        # ax.set_zlabel('barriers')
-        # ax.set_yticks(yticks)
-        # plt.show()
+        ax.set_xlabel('thickness')
+        ax.set_ylabel('pores')
+        ax.set_zlabel('barriers')
+        ax.set_yticks(yticks)
+        plt.show()
         
 
     if compare_effective_barriers:
