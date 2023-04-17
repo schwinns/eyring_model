@@ -352,7 +352,8 @@ class Path:
                          stat='density', ax=ax)
             sns.kdeplot(self.membrane_barriers, bw_method=bw, c='r', label=label, ax=ax)
         else:
-            sns.kdeplot(self.membrane_barriers, bw_method=bw, label=label, fill=fill, ax=ax)
+            # sns.kdeplot(self.membrane_barriers, bw_method=bw, label=label, fill=fill, ax=ax)
+            sns.histplot(self.membrane_barriers, label=label, ax=ax, stat='density', fill=fill)
         
         plt.xlabel('$\Delta G_{M,j}$')
 
@@ -363,7 +364,7 @@ if __name__ == '__main__':
 
     # Choose what analyses to run
     parallel_pores = True
-    compare_effective_barriers = True
+    compare_effective_barriers = False
     estimate_dH_dS = True
 
     # Inputs for testing barriers
@@ -377,8 +378,32 @@ if __name__ == '__main__':
         from tqdm import tqdm
 
         n_paths = 50
+        fill = True
 
-        fig, ax = plt.subplots(2,1, figsize=(12,8), sharex=True)
+        fig, ax = plt.subplots(3,1, figsize=(12,8), sharex=True)
+
+        # ALL MEMBRANE BARRIERS EQUAL
+
+        model_equal = EyringModel(T=T)
+        dist = 'equal'
+        params = {'mu' : large_barrier}
+
+        # plot the membrane barrier distribution for each pore, overlapping
+        effective_barriers = np.zeros(n_paths)
+        for n in range(n_paths):
+            model_equal.add_Path(dist=dist, dist_params=params)
+            effective_barriers[n] = model_equal.paths[n].calculate_effective_barrier() / (R*T)
+            model_equal.paths[n].plot_distribution(fill=fill, ax=ax[0])
+
+        permeability = model_equal.calculate_permeability()
+        effective_barrier_equal = model_equal.calculate_effective_barrier()
+
+        # save data as pandas DataFrame
+        df_equal = pd.DataFrame()
+        df_equal['pores'] = np.arange(1,n_paths+1)
+        df_equal['permeability'] = model_equal.permeabilities
+        df_equal['effective_barriers'] = effective_barriers
+        df_equal['permeability_percent'] = model_equal.permeabilities / model_equal.permeabilities.sum() * 100
 
         # NORMAL DISTRIBUTION OF BARRIERS
 
@@ -391,7 +416,7 @@ if __name__ == '__main__':
         for n in range(n_paths):
             model_norm.add_Path(dist=dist, dist_params=params)
             effective_barriers[n] = model_norm.paths[n].calculate_effective_barrier() / (R*T)
-            model_norm.paths[n].plot_distribution(fill=False, ax=ax[0])
+            model_norm.paths[n].plot_distribution(fill=fill, ax=ax[1])
 
         permeability = model_norm.calculate_permeability()
         effective_barrier_norm = model_norm.calculate_effective_barrier()
@@ -414,7 +439,7 @@ if __name__ == '__main__':
         for n in range(n_paths):
             model_exp.add_Path(dist=dist, dist_params=params)
             effective_barriers[n] = model_exp.paths[n].calculate_effective_barrier() / (R*T)
-            model_exp.paths[n].plot_distribution(fill=False, ax=ax[1])
+            model_exp.paths[n].plot_distribution(fill=fill, ax=ax[2])
 
         permeability = model_exp.calculate_permeability()
         effective_barrier_exp = model_exp.calculate_effective_barrier()
@@ -429,17 +454,24 @@ if __name__ == '__main__':
         # PLOTTING
 
         # plot the effective barrier, max barrier, and mean barrier
-        ax[0].axvline(effective_barrier_norm, ls='dashed', c='k', label='effective barrier')
+        ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='effective barrier')
         ax[0].axvline(large_barrier/R/T, ls='dashed', c='r', label='mean barrier')
         ax[0].legend()
-        ax[0].set_title(f'Normal distribution, mean = {large_barrier/R/T:.0f}RT, stdev = {sigma/R/T:.0f}RT')
+        ax[0].set_title(f'All barriers equal, {large_barrier/R/T:.0f}RT')
 
-        ax[1].axvline(effective_barrier_exp, ls='dashed', c='k', label='effective barrier')
+        ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='effective barrier')
         ax[1].axvline(large_barrier/R/T, ls='dashed', c='r', label='mean barrier')
         ax[1].legend()
-        ax[1].set_title(f'Exponential distribution, mean = {large_barrier/R/T:.0f}RT')
+        ax[1].set_title(f'Normal distribution, mean = {large_barrier/R/T:.0f}RT, stdev = {sigma/R/T:.0f}RT')
 
-        ax[1].set_xlabel('$\Delta G_{M,j} / RT$')
+        ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='effective barrier')
+        ax[2].axvline(large_barrier/R/T, ls='dashed', c='r', label='mean barrier')
+        ax[2].legend()
+        ax[2].set_title(f'Exponential distribution, mean = {large_barrier/R/T:.0f}RT')
+
+        ax[2].set_xlabel('$\Delta G_{M,j} / RT$')
+
+        fig.savefig('tmp1.png')
 
         fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
         sns.barplot(data=df_norm, x='pores', y='permeability_percent', ax=ax1)
@@ -485,13 +517,18 @@ if __name__ == '__main__':
         from tqdm import tqdm
 
         n_paths = 50
-        dist = 'normal'
-        params = {'mu' : large_barrier, 'sigma' : sigma}
         temps = [250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*10
         X = np.zeros(len(temps))
         Y = np.zeros(len(temps))
 
-        print(f'Calculating permeabilities for {len(temps)} temperatures to estimate dH and dS')
+        fig, ax = plt.subplots(1,1, figsize=(6,6))
+
+        # ALL MEMBRANE BARRIERS EQUAL
+
+        dist = 'equal'
+        params = {'mu' : large_barrier}
+
+        print(f'Calculating permeabilities for {len(temps)} temperatures to estimate dH and dS for {dist} distribution of barriers')
         for i,T in tqdm(enumerate(temps)):
             model = EyringModel(T=T)
             for n in range(n_paths):
@@ -503,16 +540,69 @@ if __name__ == '__main__':
             X[i] = 1 / T
             Y[i] = np.log(P*h*delta / (kB*T*lam**2))
 
-        data = pd.DataFrame(np.array([X,Y]).T, columns=['1/T', 'ln(P h del / kB T lam^2)'])
+        df1 = pd.DataFrame(np.array([X,Y]).T, columns=['1/T', 'ln(P h del / kB T lam^2)'])
+        df1['distribution'] = ['equal']*len(temps)
         m, b = np.polyfit(X,Y,1)
-        dH = -m*R
-        dS = b*R
+        dH_equal = -m*R
+        dS_equal = b*R
 
-        sns.lmplot(x='1/T', y='ln(P h del / kB T lam^2)', data=data, scatter_kws={'alpha':0.75, 'edgecolor':'tab:blue'})
+        # NORMAL DISTRIBUTIONS OF BARRIERS
+
+        dist = 'normal'
+        params = {'mu' : large_barrier, 'sigma' : sigma}
+
+        print(f'Calculating permeabilities for {len(temps)} temperatures to estimate dH and dS for {dist} distribution of barriers')
+        for i,T in tqdm(enumerate(temps)):
+            model = EyringModel(T=T)
+            for n in range(n_paths):
+                model.add_Path(dist=dist, dist_params=params)
+
+            P = model.calculate_permeability()
+            lam = model.get_lambda()
+            delta = np.array(model.deltas).mean()
+            X[i] = 1 / T
+            Y[i] = np.log(P*h*delta / (kB*T*lam**2))
+
+        df2 = pd.DataFrame(np.array([X,Y]).T, columns=['1/T', 'ln(P h del / kB T lam^2)'])
+        df2['distribution'] = ['normal']*len(temps)
+        m, b = np.polyfit(X,Y,1)
+        dH_norm = -m*R
+        dS_norm = b*R
+
+        # EXPONENTIAL DISTRIBUTIONS OF BARRIERS
+
+        dist = 'exponential'
+        params = {'beta' : large_barrier}
+
+        print(f'Calculating permeabilities for {len(temps)} temperatures to estimate dH and dS for {dist} distribution of barriers')
+        for i,T in tqdm(enumerate(temps)):
+            model = EyringModel(T=T)
+            for n in range(n_paths):
+                model.add_Path(dist=dist, dist_params=params)
+
+            P = model.calculate_permeability()
+            lam = model.get_lambda()
+            delta = np.array(model.deltas).mean()
+            X[i] = 1 / T
+            Y[i] = np.log(P*h*delta / (kB*T*lam**2))
+
+        df3 = pd.DataFrame(np.array([X,Y]).T, columns=['1/T', 'ln(P h del / kB T lam^2)'])
+        df3['distribution'] = ['normal']*len(temps)
+        m, b = np.polyfit(X,Y,1)
+        dH_exp = -m*R
+        dS_exp = b*R
+
+        data = pd.concat((df1,df2,df3))
+
+        sns.lmplot(x='1/T', y='ln(P h del / kB T lam^2)', data=data, hue='distribution', scatter_kws={'alpha':0.75, 'edgecolor':'black'})
         plt.xlabel('1/T')
         plt.ylabel('ln($P h \delta$ / $k_B T \lambda$)')
         xmin, xmax = plt.xlim()
         ymin, ymax = plt.ylim()
-        plt.text(xmax*0.95, ymax*1.05, 'dH = {:.4f}\ndS = {:.4f}'.format(dH, dS), ha='right')
+        # plt.text(xmax*0.95, ymax*1.05, 'dH = {:.4f}\ndS = {:.4f}'.format(dH, dS), ha='right')
+        print('\nFor equal barriers = {:.0f}RT: \ndH = {:.4f}\ndS = {:.4f} kcal/mol'.format(large_barrier/R/T, dH_equal, dS_equal))
+        print('\nFor normally distributed barriers with mean = {:.0f}RT: \ndH = {:.4f}\ndS = {:.4f} kcal/mol'.format(large_barrier/R/T, dH_norm, dS_norm))
+        print('\nFor exponentially distributed barriers with mean = {:.0f}RT: \ndH = {:.4f}\ndS = {:.4f} kcal/mol'.format(large_barrier/R/T, dH_exp, dS_exp))
+        plt.savefig('tmp2.png')
         plt.show()
         
