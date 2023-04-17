@@ -241,7 +241,7 @@ class EyringModel():
         return num / den * 1000 # units = L / m^2 / h
     
 
-    def calculate_effective_barrier(self, T=None):
+    def calculate_effective_barrier_single_path(self, T=None):
         '''Calculate the effective barrier that is experimentally observed from membrane barriers
         
         :param T: temperature (K), default=None (use self.T)
@@ -334,6 +334,7 @@ if __name__ == '__main__':
 
     # Choose what analyses to run
     parallel_pores = True
+    surf3d = False
     compare_effective_barriers = False
     estimate_dH_dS = False
     tabulated_comparisons = False
@@ -349,44 +350,106 @@ if __name__ == '__main__':
 
         from tqdm import tqdm
 
-        n_pores = 10
+        n_pores = 50
 
         model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
         params = {'mu' : large_barrier, 'sigma' : sigma}
 
-        permeabilities = np.zeros(n_pores)
-        eff_barriers = np.zeros(n_pores)
-        mem_dist = np.zeros((model.n_jumps, n_pores))
-        for n in tqdm(range(n_pores)):
-            mem_dist[:,n] = model.generate_membrane_barriers(dist='normal', dist_params=params)
-            eff_barriers[n] = model.calculate_effective_barrier() / (R*T)
-            permeabilities[n] = model.calculate_permeability()
+        fig, ax = plt.subplots(2,1, figsize=(12,8), sharex=True)
 
-        # sns.kdeplot(permeabilities, bw_method='scott', fill=True)
+        # NORMAL DISTRIBUTION OF BARRIERS
+
+        # loop through each pore and calculate individual permeabilities/effective barriers
+        # plot the membrane barrier distribution for each pore, overlapping
+        permeabilities = np.zeros(n_pores)
+        mem_dist = np.zeros((model.n_jumps, n_pores))
+        eff_barriers = np.zeros(n_pores)
+        for n in tqdm(range(n_pores)):
+            mem_dist[:,n] = model.generate_membrane_barriers(dist='normal', dist_params=params) / (R*T)
+            permeabilities[n] = model.calculate_permeability()
+            eff_barriers[n] = model.calculate_effective_barrier_single_path() / (R*T)
+            sns.kdeplot(mem_dist[:,n], bw_method='scott', fill=False, ax=ax[0])
+
+        # save data as pandas DataFrame
         df = pd.DataFrame()
         df['pores'] = np.arange(1,n_pores+1)
         df['permeability'] = permeabilities
         df['effective_barriers'] = eff_barriers
         df['permeability_percent'] = permeabilities / permeabilities.sum() * 100
+        
+        # Calculate the effective barrier for the parallel pores, i.e. overall permeability
+        # plot the effective barrier, max barrier, and mean barrier
+        delta = model.jump_lengths.sum()
+        effective_barrier = -np.log(delta / model.lam**2 * h / kB / T * permeabilities.sum())
+        ax[0].axvline(effective_barrier, ls='dashed', c='k', label='effective barrier')
+        ax[0].axvline(mem_dist.max(), ls='dashed', c='b', label='maximum individual barrier')
+        ax[0].axvline(mem_dist.mean(), ls='dashed', c='r', label='mean barrier')
+        ax[0].legend()
+        ax[0].set_title(f'Normal distribution, mean = {large_barrier/R/T:.0f}RT, stdev = {sigma/R/T:.0f}RT')
 
-        sns.barplot(data=df, x='pores', y='permeability')
-        plt.ylabel('Permeability ($L/m^2 H$)')
+        fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
+        sns.barplot(data=df, x='pores', y='permeability_percent', ax=ax1)
+        ax1.set_ylabel('percentage of permeability')
         # plt.axhline(permeabilities.sum(), c='k', ls='dashed')
         xmin, xmax = plt.xlim()
         ymin, ymax = plt.ylim()
-        plt.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
+        ax1.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
+
+        # EXPONENTIAL DISTRIBUTION OF BARRIERS
+
+        params = {'beta' : large_barrier}
+
+        # loop through each pore and calculate individual permeabilities/effective barriers
+        # plot the membrane barrier distribution for each pore, overlapping
+        permeabilities = np.zeros(n_pores)
+        mem_dist = np.zeros((model.n_jumps, n_pores))
+        for n in tqdm(range(n_pores)):
+            mem_dist[:,n] = model.generate_membrane_barriers(dist='exponential', dist_params=params) / (R*T)
+            permeabilities[n] = model.calculate_permeability()
+            eff_barriers[n] = model.calculate_effective_barrier_single_path() / (R*T)
+            sns.kdeplot(mem_dist[:,n], bw_method='scott', fill=False, ax=ax[1])
+        
+        # save data as pandas DataFrame
+        df = pd.DataFrame()
+        df['pores'] = np.arange(1,n_pores+1)
+        df['permeability'] = permeabilities
+        df['effective_barriers'] = eff_barriers
+        df['permeability_percent'] = permeabilities / permeabilities.sum() * 100
+        
+        # Calculate the effective barrier for the parallel pores, i.e. overall permeability
+        # plot the effective barrier, max barrier, and mean barrier
+        delta = model.jump_lengths.sum()
+        effective_barrier = -np.log(delta / model.lam**2 * h / kB / T * permeabilities.sum())
+        ax[1].axvline(effective_barrier, ls='dashed', c='k', label='effective barrier')
+        ax[1].axvline(mem_dist.max(), ls='dashed', c='b', label='maximum individual barrier')
+        ax[1].axvline(mem_dist.mean(), ls='dashed', c='r', label='mean barrier')
+        ax[1].set_title(f'Exponential distribution, mean = {large_barrier/R/T:.0f}RT')
+
+        ax[1].set_xlabel('$\Delta G_{M,j} / RT$')
+        ax[1].legend()
+        # fig.suptitle('Distributions of membrane barriers for 50 parallel pores')
+
+        fig2, ax2 = plt.subplots(1,1, figsize=(6,6))
+        sns.barplot(data=df, x='pores', y='permeability_percent', ax=ax2)
+        ax2.set_ylabel('percentage of permeability')
+        # plt.axhline(permeabilities.sum(), c='k', ls='dashed')
+        xmin, xmax = plt.xlim()
+        ymin, ymax = plt.ylim()
+        ax2.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(permeabilities.max(), permeabilities.sum()), ha='right')
         plt.show()
 
-        sns.barplot(data=df, x='pores', y='permeability_percent')
-        plt.ylabel('percentage of permeability')
-        plt.show()
 
-        # sns.kdeplot(eff_barriers, bw_method='scott', fill=True)
-        sns.barplot(data=df, x='pores', y='effective_barriers')
-        plt.ylabel('$\Delta G_{eff}$/RT')
-        plt.show()
+    if surf3d:
 
         from matplotlib import cm
+
+        n_pores = 50
+
+        model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
+        params = {'mu' : large_barrier, 'sigma' : sigma}
+
+        for n in range(n_pores):
+            mem_dist[:,n] = model.generate_membrane_barriers(dist='normal', dist_params=params) / (R*T)
 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -420,14 +483,14 @@ if __name__ == '__main__':
         model = EyringModel(T=T, barrier_ms=10, barrier_sm=10)
         params = {'mu' : large_barrier, 'sigma' : sigma}
         model.generate_membrane_barriers(dist='normal', dist_params=params)
-        dG_eff = model.calculate_effective_barrier() / (R*T)
+        dG_eff = model.calculate_effective_barrier_single_path() / (R*T)
         model.membrane_barriers = model.membrane_barriers / (R*T)
         ax = model.plot_distribution(bw='scott', show_hist=False, label='N(30RT, 10RT)')
         ax.axvline(dG_eff, ls='dashed', c='k', label='N: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
 
         params = {'beta' : large_barrier}
         model.generate_membrane_barriers(dist='exponential', dist_params=params)
-        dG_eff = model.calculate_effective_barrier() / (R*T)
+        dG_eff = model.calculate_effective_barrier_single_path() / (R*T)
         model.membrane_barriers = model.membrane_barriers / (R*T)
         model.plot_distribution(bw='scott', show_hist=False, ax=ax, label='exp(30RT)')
         ax.axvline(dG_eff, ls='dotted', c='k', label='exp: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
