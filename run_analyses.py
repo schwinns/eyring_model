@@ -26,7 +26,7 @@ plot_paths = False
 
 # Inputs for testing barriers
 T = 300
-large = 18
+large = 10
 large_barrier = large*R*T
 small_barrier = large_barrier / 2
 sigma = large_barrier / 3
@@ -61,6 +61,10 @@ if parallel_pores:
     df_equal['permeability'] = model_equal.permeabilities
     df_equal['effective_barriers'] = effective_barriers
     df_equal['permeability_percent'] = model_equal.permeabilities / model_equal.permeabilities.sum() * 100
+    df_equal.sort_values('permeability_percent', ascending=False, inplace=True)
+    df_equal['flux_fraction'] = df_equal['permeability_percent'].cumsum() / 100
+    df_equal['pore_fraction'] = np.arange(1,n_paths+1) / n_paths
+    df_equal.loc[len(df_equal.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
 
     # NORMAL DISTRIBUTION OF BARRIERS
 
@@ -85,7 +89,12 @@ if parallel_pores:
     df_norm['permeability'] = model_norm.permeabilities
     df_norm['effective_barriers'] = effective_barriers
     df_norm['permeability_percent'] = model_norm.permeabilities / model_norm.permeabilities.sum() * 100
+    df_norm.sort_values('permeability_percent', ascending=False, inplace=True)
+    df_norm['flux_fraction'] = df_norm['permeability_percent'].cumsum() / 100
+    df_norm['pore_fraction'] = np.arange(1,n_paths+1) / n_paths
+    df_norm.loc[len(df_norm.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
     
+
     # EXPONENTIAL DISTRIBUTION OF BARRIERS
 
     model_exp = EyringModel(T=T)
@@ -109,7 +118,10 @@ if parallel_pores:
     df_exp['permeability'] = model_exp.permeabilities
     df_exp['effective_barriers'] = effective_barriers
     df_exp['permeability_percent'] = model_exp.permeabilities / model_exp.permeabilities.sum() * 100
-
+    df_exp.sort_values('permeability_percent', ascending=False, inplace=True)
+    df_exp['flux_fraction'] = df_exp['permeability_percent'].cumsum() / 100
+    df_exp['pore_fraction'] = np.arange(1,n_paths+1) / n_paths
+    df_exp.loc[len(df_exp.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
     # PLOTTING
 
     # plot the effective barrier, max barrier, and mean barrier
@@ -143,6 +155,17 @@ if parallel_pores:
     xmin, xmax = plt.xlim()
     ymin, ymax = plt.ylim()
     ax2.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_exp['permeability'].max(), df_exp['permeability'].sum()), ha='right')
+
+    print(df_exp)
+    
+    fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
+    sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
+    sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
+    sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
+    ax3.set_xlabel('fraction of the pores')
+    ax3.set_ylabel('fraction of the flux')
+    # ax3.set_xlim(0,1)
+    # ax3.set_ylim(0,1)
     plt.show()
 
 
