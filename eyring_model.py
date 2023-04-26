@@ -341,14 +341,14 @@ class Path:
         return -np.log(num / den) * R*temp
 
 
-    def plot_distribution(self, bw=None, hist=False, n_bins=50, label=None, fill=True, ax=None, color=None):
+    def plot_distribution(self, bw=None, hist=False, n_bins=50, binwidth=None, label=None, fill=True, ax=None, color=None):
 
         if ax is None:
             fig, ax = plt.subplots(1,1, figsize=(10,6))
 
         if hist:
-            sns.histplot(self.membrane_barriers, bins=n_bins, 
-                         stat='density', ax=ax, color=color)
+            sns.histplot(self.membrane_barriers, bins=n_bins, binwidth=binwidth, edgecolor='black',
+                         stat='density', ax=ax, color=color, alpha=0.5, label=label)
         else:
             sns.kdeplot(self.membrane_barriers, bw_method=bw, label=label, fill=fill, ax=ax, color=color)
         

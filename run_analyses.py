@@ -26,7 +26,7 @@ plot_paths = False
 
 # Inputs for testing barriers
 T = 300
-large = 10
+large = 18
 large_barrier = large*R*T
 small_barrier = large_barrier / 2
 sigma = large_barrier / 3
@@ -49,7 +49,7 @@ if parallel_pores:
     for n in range(n_paths):
         model_equal.add_Path(dist=dist, dist_params=params)
         effective_barriers[n] = model_equal.paths[n].calculate_effective_barrier() / (R*T)
-        sns.histplot(model_equal.paths[n].membrane_barriers / (R*T), ax=ax[0], stat='density', fill=fill)
+        sns.histplot(model_equal.paths[n].membrane_barriers / (R*T), edgecolor=None, ax=ax[0], stat='density', fill=fill, alpha=0.25)
         # model_equal.paths[n].plot_distribution(fill=fill, ax=ax[0])
 
     permeability = model_equal.calculate_permeability()
@@ -77,7 +77,7 @@ if parallel_pores:
     for n in range(n_paths):
         model_norm.add_Path(dist=dist, dist_params=params)
         effective_barriers[n] = model_norm.paths[n].calculate_effective_barrier() / (R*T)
-        sns.histplot(model_norm.paths[n].membrane_barriers / (R*T), ax=ax[1], stat='density', fill=fill)
+        sns.histplot(model_norm.paths[n].membrane_barriers / (R*T), binwidth=1, edgecolor=None, ax=ax[1], stat='density', fill=fill, alpha=0.25)
         # model_norm.paths[n].plot_distribution(fill=fill, ax=ax[1])
 
     permeability = model_norm.calculate_permeability()
@@ -106,7 +106,7 @@ if parallel_pores:
     for n in range(n_paths):
         model_exp.add_Path(dist=dist, dist_params=params)
         effective_barriers[n] = model_exp.paths[n].calculate_effective_barrier() / (R*T)
-        sns.histplot(model_exp.paths[n].membrane_barriers / (R*T), ax=ax[2], stat='density', fill=fill)
+        sns.histplot(model_exp.paths[n].membrane_barriers / (R*T), binwidth=1, edgecolor=None, ax=ax[2], stat='density', fill=fill, alpha=0.25)
         # model_exp.paths[n].plot_distribution(fill=fill, ax=ax[2])
 
     permeability = model_exp.calculate_permeability()
@@ -122,6 +122,7 @@ if parallel_pores:
     df_exp['flux_fraction'] = df_exp['permeability_percent'].cumsum() / 100
     df_exp['pore_fraction'] = np.arange(1,n_paths+1) / n_paths
     df_exp.loc[len(df_exp.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
+    
     # PLOTTING
 
     # plot the effective barrier, max barrier, and mean barrier
@@ -141,6 +142,7 @@ if parallel_pores:
     ax[2].set_title(f'Exponential distribution, mean = {large_barrier/R/T:.0f}RT')
 
     ax[2].set_xlabel('$\Delta G_{M,j} / RT$')
+    ax[2].set_xlim(-10,)
 
     fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
     sns.barplot(data=df_norm, x='pores', y='permeability_percent', ax=ax1)
@@ -155,8 +157,6 @@ if parallel_pores:
     xmin, xmax = plt.xlim()
     ymin, ymax = plt.ylim()
     ax2.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_exp['permeability'].max(), df_exp['permeability'].sum()), ha='right')
-
-    print(df_exp)
     
     fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
     sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
@@ -176,20 +176,25 @@ if compare_effective_barriers:
     model = Path(T=T, dist=dist, dist_params=params)
     dG_eff = model.calculate_effective_barrier() / (R*T)
     model.membrane_barriers = model.membrane_barriers / (R*T)
-    ax = model.plot_distribution(bw='scott', show_hist=False, label=f'N({large_barrier/R/T:.0f}RT, {sigma/R/T:.0f}RT)')
-    ax.axvline(dG_eff, ls='dashed', c='k', label='N: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+    ax = model.plot_distribution(hist=True, color='tab:blue', binwidth=1, label='normal')
+    ymin, ymax = plt.ylim()
+    ax.axvline(dG_eff, ls='dashed', c='tab:blue')
+    ax.text(dG_eff*1.1, ymax*0.9, '$\Delta G_{eff}$/RT')
 
     dist = 'exponential'
     params = {'beta' : large_barrier}
     model = Path(T=T, dist=dist, dist_params=params)
     dG_eff = model.calculate_effective_barrier() / (R*T)
     model.membrane_barriers = model.membrane_barriers / (R*T)
-    model.plot_distribution(bw='scott', show_hist=False, ax=ax, label=f'exp({large_barrier/R/T:.0f}RT)')
-    ax.axvline(dG_eff, ls='dotted', c='k', label='exp: $\Delta G_{eff}$/RT = %.4f' % (dG_eff))
+    model.plot_distribution(hist=True, color='tab:orange', binwidth=1, ax=ax, label='exponential')
+    ymin, ymax = plt.ylim()
+    ax.axvline(dG_eff, ls='dashed', c='tab:orange')
+    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}$/RT')
     
-    ax.axvline(large_barrier/R/T, c='r', label='mean')
+    ax.axvline(large, c='r')
+    ax.text(large*0.5, ymax*0.9, 'mean', ha='left')
     ax.set_xlabel('$\Delta G_{M,j}$ / RT')
-    plt.legend(loc='upper center')
+    plt.legend(loc='center')
     plt.show()
 
 if estimate_dH_dS_barrier_distributions:
@@ -338,6 +343,7 @@ if compare_jump_lengths:
     jump_dist = 'equal'
     
     permeabilities = np.zeros(len(lambdas))
+    deltas = np.zeros(len(lambdas))
     effective_barriers = np.zeros(len(lambdas))
         
     for i,lam in tqdm(enumerate(lambdas)):
@@ -353,10 +359,14 @@ if compare_jump_lengths:
     
             
         permeabilities[i] = model.calculate_permeability()
+        deltas[i] = np.array(model.deltas).mean()
+        effective_barriers[i] = model.calculate_effective_barrier()
 
     df1 = pd.DataFrame()
     df1['lambda'] = lambdas
     df1['permeability'] = permeabilities
+    df1['thickness'] = deltas
+    df1['effective_barriers'] = effective_barriers*R*T
     df1['distribution'] = ['equal']*len(lambdas)
 
     # Jump lengths NORMAL
@@ -375,10 +385,14 @@ if compare_jump_lengths:
             model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
                 
         permeabilities[i] = model.calculate_permeability()
+        deltas[i] = np.array(model.deltas).mean()
+        effective_barriers[i] = model.calculate_effective_barrier()
 
     df2 = pd.DataFrame()
     df2['lambda'] = lambdas
     df2['permeability'] = permeabilities
+    df2['thickness'] = deltas
+    df2['effective_barriers'] = effective_barriers*R*T
     df2['distribution'] = ['normal']*len(lambdas)
 
     # Jump lengths EXPONENTIAL
@@ -397,15 +411,36 @@ if compare_jump_lengths:
             model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
                 
         permeabilities[i] = model.calculate_permeability()
+        deltas[i] = np.array(model.deltas).mean()
+        effective_barriers[i] = model.calculate_effective_barrier()
 
     df3 = pd.DataFrame()
     df3['lambda'] = lambdas
     df3['permeability'] = permeabilities
+    df3['thickness'] = deltas
+    df3['effective_barriers'] = effective_barriers*R*T
     df3['distribution'] = ['exponential']*len(lambdas)
 
     sns.lineplot(data=df1, x='lambda', y='permeability', color='tab:blue', label='equal')
     sns.lineplot(data=df2, x='lambda', y='permeability', color='tab:orange', label='normal')
     sns.lineplot(data=df3, x='lambda', y='permeability', color='tab:green', label='exponential')
-    plt.xlabel('$\lambda$ (Angstrom)')
+    plt.xlabel('mean jump length (Angstroms)')
+    plt.ylabel('permeability ($L/m^2 h$)')
+    plt.legend()
+    plt.show()
+
+    sns.scatterplot(data=df1, x='lambda', y='thickness', color='tab:blue', label='equal')
+    sns.scatterplot(data=df2, x='lambda', y='thickness', color='tab:orange', label='normal')
+    sns.scatterplot(data=df3, x='lambda', y='thickness', color='tab:green', label='exponential')
+    plt.xlabel('mean jump length (Angstroms)')
+    plt.ylabel('thickness (Angstroms)')
+    plt.legend()
+    plt.show()
+
+    sns.scatterplot(data=df1, x='lambda', y='effective_barriers', color='tab:blue', label='equal')
+    sns.scatterplot(data=df2, x='lambda', y='effective_barriers', color='tab:orange', label='normal')
+    sns.scatterplot(data=df3, x='lambda', y='effective_barriers', color='tab:green', label='exponential')
+    plt.xlabel('mean jump length (Angstroms)')
+    plt.ylabel('$\Delta G_{eff}$/RT')
     plt.legend()
     plt.show()
