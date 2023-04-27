@@ -192,7 +192,10 @@ class Path:
             raise DistributionError('{} is not currently implemented. Try one of {}'.format(dist, dist_options))
 
         # print('Generated {} distribution of membrane barriers with mean {:.4f} and stdev {:.4f}'.format(dist, self.membrane_barriers.mean(), self.membrane_barriers.std()))
-        return self.membrane_barriers
+        if not multi:
+            return self.membrane_barriers
+        else:
+            return self.membrane_barriers, self.enthalpic_barriers
 
     
     def generate_jump_distribution(self, dist=None, dist_params={'mu' : 2}, seed=None):
