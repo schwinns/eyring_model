@@ -17,10 +17,11 @@ global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 # Choose what analyses to run
-parallel_pores = True
+parallel_pores = False
 compare_effective_barriers = False
 estimate_dH_dS_barrier_distributions = False
 estimate_dH_dS_jump_distributions = False
+estimate_dH_dS_spread = False
 compare_jump_lengths = False
 plot_paths = False
 
@@ -213,7 +214,7 @@ if estimate_dH_dS_barrier_distributions:
     for i,T in tqdm(enumerate(temps)):
         model = EyringModel(T=T)
         for n in range(n_paths):
-            model.add_Path(dist=dist, dist_params={'mu' : large*R*300}) # membrane barrier distribution parameters change for each T
+            model.add_Path(dist=dist, dist_params={'mu' : large*R*300}) 
 
         dG[i] = model.calculate_effective_barrier()
         P = model.calculate_permeability()
@@ -443,4 +444,52 @@ if compare_jump_lengths:
     plt.xlabel('mean jump length (Angstroms)')
     plt.ylabel('$\Delta G_{eff}$/RT')
     plt.legend()
+    plt.show()
+
+if estimate_dH_dS_spread:
+
+    n_paths = 50
+    temps = [250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*10
+    barrier = large*R*300
+    sigmas = np.array([1/10, 1/9, 1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1]*10)*barrier
+
+    X = np.zeros(len(temps))
+    Y = np.zeros(len(temps))
+    dH = np.zeros(len(sigmas))
+    dS = np.zeros(len(sigmas))
+
+    # NORMAL DISTRIBUTIONS OF BARRIERS
+
+    dist = 'normal'
+
+    for s,sig in tqdm(enumerate(sigmas)):
+
+        for i,T in enumerate(temps):
+            model = EyringModel(T=T)
+            for n in range(n_paths):
+                model.add_Path(dist=dist, dist_params={'mu' : barrier, 'sigma' : sig})
+
+            P = model.calculate_permeability()
+            lam = model.get_lambda()
+            delta = np.array(model.deltas).mean()
+            X[i] = 1 / T
+            Y[i] = np.log(P*h*delta / (kB*T*lam**2))
+
+        m, b = np.polyfit(X,Y,1)
+        dH[s] = -m*R
+        dS[s] = b*R
+    
+    df = pd.DataFrame()
+    df['sigma'] = sigmas
+    df['enthalpy'] = dH
+    df['entropy'] = dS
+    
+
+    fig, ax = plt.subplots(1,2, figsize=(18,5))
+    sns.lineplot(data=df, x='sigma', y='enthalpy', ax=ax[0])
+    sns.lineplot(data=df, x='sigma', y='entropy', ax=ax[1])
+    ax[0].set_xlabel('$\sigma$ for individual membrane barrier distributions')
+    ax[1].set_xlabel('$\sigma$ for individual membrane barrier distributions')
+    ax[0].set_ylabel('$\Delta H_{eff}$')
+    ax[1].set_ylabel('$\Delta S_{eff}$')
     plt.show()
