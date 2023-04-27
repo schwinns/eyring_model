@@ -17,7 +17,7 @@ global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 # Choose what analyses to run
-parallel_pores = False
+parallel_pores = True
 compare_effective_barriers = False
 estimate_dH_dS_barrier_distributions = False
 estimate_dH_dS_jump_distributions = False
@@ -34,7 +34,8 @@ sigma = large_barrier / 3
 
 if parallel_pores:
 
-    n_paths = 50
+    n_paths = 1000
+    n_jumps = 50
     fill = True
 
     fig, ax = plt.subplots(3,1, figsize=(12,8), sharex=True)
@@ -47,8 +48,8 @@ if parallel_pores:
 
     # plot the membrane barrier distribution for each pore, overlapping
     effective_barriers = np.zeros(n_paths)
-    for n in range(n_paths):
-        model_equal.add_Path(dist=dist, dist_params=params)
+    for n in tqdm(range(n_paths)):
+        model_equal.add_Path(dist=dist, dist_params=params, n_jumps=n_jumps)
         effective_barriers[n] = model_equal.paths[n].calculate_effective_barrier() / (R*T)
         sns.histplot(model_equal.paths[n].membrane_barriers / (R*T), edgecolor=None, ax=ax[0], stat='density', fill=fill, alpha=0.25)
         # model_equal.paths[n].plot_distribution(fill=fill, ax=ax[0])
@@ -75,8 +76,8 @@ if parallel_pores:
 
     # plot the membrane barrier distribution for each pore, overlapping
     effective_barriers = np.zeros(n_paths)
-    for n in range(n_paths):
-        model_norm.add_Path(dist=dist, dist_params=params)
+    for n in tqdm(range(n_paths)):
+        model_norm.add_Path(dist=dist, dist_params=params, n_jumps=n_jumps)
         effective_barriers[n] = model_norm.paths[n].calculate_effective_barrier() / (R*T)
         sns.histplot(model_norm.paths[n].membrane_barriers / (R*T), binwidth=1, edgecolor=None, ax=ax[1], stat='density', fill=fill, alpha=0.25)
         # model_norm.paths[n].plot_distribution(fill=fill, ax=ax[1])
@@ -104,8 +105,8 @@ if parallel_pores:
 
     # plot the membrane barrier distribution for each pore, overlapping
     effective_barriers = np.zeros(n_paths)
-    for n in range(n_paths):
-        model_exp.add_Path(dist=dist, dist_params=params)
+    for n in tqdm(range(n_paths)):
+        model_exp.add_Path(dist=dist, dist_params=params, n_jumps=n_jumps)
         effective_barriers[n] = model_exp.paths[n].calculate_effective_barrier() / (R*T)
         sns.histplot(model_exp.paths[n].membrane_barriers / (R*T), binwidth=1, edgecolor=None, ax=ax[2], stat='density', fill=fill, alpha=0.25)
         # model_exp.paths[n].plot_distribution(fill=fill, ax=ax[2])
@@ -145,28 +146,28 @@ if parallel_pores:
     ax[2].set_xlabel('$\Delta G_{M,j} / RT$')
     ax[2].set_xlim(-10,)
 
-    fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
-    sns.barplot(data=df_norm, x='pores', y='permeability_percent', ax=ax1)
-    ax1.set_ylabel('percentage of permeability')
-    xmin, xmax = plt.xlim()
-    ymin, ymax = plt.ylim()
-    ax1.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_norm['permeability'].max(), df_norm['permeability'].sum()), ha='right')
+    # fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
+    # sns.barplot(data=df_norm, x='pores', y='permeability_percent', ax=ax1)
+    # ax1.set_ylabel('percentage of permeability')
+    # xmin, xmax = plt.xlim()
+    # ymin, ymax = plt.ylim()
+    # ax1.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_norm['permeability'].max(), df_norm['permeability'].sum()), ha='right')
 
-    fig2, ax2 = plt.subplots(1,1, figsize=(6,6))
-    sns.barplot(data=df_exp, x='pores', y='permeability_percent', ax=ax2)
-    ax2.set_ylabel('percentage of permeability')
-    xmin, xmax = plt.xlim()
-    ymin, ymax = plt.ylim()
-    ax2.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_exp['permeability'].max(), df_exp['permeability'].sum()), ha='right')
+    # fig2, ax2 = plt.subplots(1,1, figsize=(6,6))
+    # sns.barplot(data=df_exp, x='pores', y='permeability_percent', ax=ax2)
+    # ax2.set_ylabel('percentage of permeability')
+    # xmin, xmax = plt.xlim()
+    # ymin, ymax = plt.ylim()
+    # ax2.text(xmax*0.95, ymax*0.9, 'Max P: {:.4f}\nOverall P: {:.4f}'.format(df_exp['permeability'].max(), df_exp['permeability'].sum()), ha='right')
     
-    fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
-    sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
-    sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
-    sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
-    ax3.set_xlabel('fraction of the pores')
-    ax3.set_ylabel('fraction of the flux')
-    # ax3.set_xlim(0,1)
-    # ax3.set_ylim(0,1)
+    # fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
+    # sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
+    # sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
+    # sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
+    # ax3.set_xlabel('fraction of the pores')
+    # ax3.set_ylabel('fraction of the flux')
+    # # ax3.set_xlim(0,1)
+    # # ax3.set_ylim(0,1)
     plt.show()
 
 
@@ -485,11 +486,16 @@ if estimate_dH_dS_spread:
     df['entropy'] = dS
     
 
-    fig, ax = plt.subplots(1,2, figsize=(18,5))
-    sns.lineplot(data=df, x='sigma', y='enthalpy', ax=ax[0])
-    sns.lineplot(data=df, x='sigma', y='entropy', ax=ax[1])
-    ax[0].set_xlabel('$\sigma$ for individual membrane barrier distributions')
-    ax[1].set_xlabel('$\sigma$ for individual membrane barrier distributions')
-    ax[0].set_ylabel('$\Delta H_{eff}$')
-    ax[1].set_ylabel('$\Delta S_{eff}$')
+    # fig, ax = plt.subplots(1,2, figsize=(18,5))
+    # sns.lineplot(data=df, x='sigma', y='enthalpy', ax=ax[0])
+    # sns.lineplot(data=df, x='sigma', y='entropy', ax=ax[1])
+    # ax[0].set_xlabel('$\sigma$ for individual membrane barrier distributions')
+    # ax[1].set_xlabel('$\sigma$ for individual membrane barrier distributions')
+    # ax[0].set_ylabel('$\Delta H_{eff}$')
+    # ax[1].set_ylabel('$\Delta S_{eff}$')
+
+    sns.lineplot(data=df, x='sigma', y='enthalpy')
+    plt.xlabel('$\sigma$ for individual membrane barrier distributions')
+    plt.ylabel('$\Delta H_{eff}$')
+    plt.savefig('tmp_dH.png')
     plt.show()
