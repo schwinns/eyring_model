@@ -371,3 +371,25 @@ class Path:
         plt.xlabel('$\Delta G_{M,j}$')
 
         return ax
+
+
+if __name__ == '__main__':
+
+    T = 300
+    lam = 10
+    n_jumps = 50
+    multi = True
+    dist = 'normal'
+    dist_params = {'mu' : np.array([14,8]),
+                   'cov': np.array([[14/3,0],
+                                    [0,8/3]])}
+
+    p = Path(T=T, n_jumps=n_jumps, lam=lam)
+    dG, dH = p.generate_membrane_barriers(dist=dist, dist_params=dist_params, multi=multi)
+
+    fig, ax = plt.subplots(2,1, figsize=(6,10), sharex=True)
+    ax[0].hist(dG, bins=50, edgecolor='k', alpha=0.75)
+    ax[0].set_xlabel('dG')
+    ax[1].hist(dH, bins=50, edgecolor='k', alpha=0.75)
+    ax[1].set_xlabel('dH')
+    plt.show()
