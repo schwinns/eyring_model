@@ -130,7 +130,7 @@ class Path:
         self.barrier_ms = barrier_ms             # membrane-solution barrier
 
 
-    def generate_membrane_barriers(self, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, seed=None):
+    def generate_membrane_barriers(self, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, multi=False, seed=None):
         '''Generate a distribution of membrane barriers
         
         :param dist: distribution from which to draw the membrane barriers, default='normal'
@@ -150,7 +150,20 @@ class Path:
         # create random number generator   
         rng = np.random.default_rng(seed)
 
-        if dist in ['normal', 'N', 'norm']: # normal distribution of barriers
+        if multi and dist in ['normal', 'N', 'norm']: # multivariate normal distribution of barriers
+            # Raise an error if the correct parameters are not provided
+            if 'mu' not in dist_params.keys():
+                raise DistributionError("'mu' must be a key in distribution parameters for a multivariate normal distribution")
+            elif 'cov' not in dist_params.keys():
+                raise DistributionError("'cov' must be a key in distribution parameters for a multivariate normal distribution")
+            
+            # generate barrier distribution and enthalpy distribution
+            multi_norm = rng.multivariate_normal(mean=dist_params['mu'], cov=dist_params['cov'], size=self.n_jumps)
+            print(multi_norm.shape)
+            self.membrane_barriers = multi_norm[:,0] # should be first value in mean and covariance
+            self.enthalpic_barriers = multi_norm[:,1] # second value in mean and covariance
+
+        elif dist in ['normal', 'N', 'norm']: # normal distribution of barriers
             # Raise an error if the correct parameters are not provided
             if 'mu' not in dist_params.keys():
                 raise DistributionError("'mu' must be a key in distribution parameters for a normal distribution")
@@ -191,7 +204,7 @@ class Path:
             dist_options = ['normal', 'exponential', 'uniform', 'equal']
             raise DistributionError('{} is not currently implemented. Try one of {}'.format(dist, dist_options))
 
-        # print('Generated {} distribution of membrane barriers with mean {:.4f} and stdev {:.4f}'.format(dist, self.membrane_barriers.mean(), self.membrane_barriers.std()))
+
         if not multi:
             return self.membrane_barriers
         else:

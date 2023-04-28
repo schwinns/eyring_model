@@ -17,13 +17,14 @@ global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 # Choose what analyses to run
-parallel_pores = True
+parallel_pores = False
 compare_effective_barriers = False
 estimate_dH_dS_barrier_distributions = False
 estimate_dH_dS_jump_distributions = False
 estimate_dH_dS_spread = False
 compare_jump_lengths = False
 plot_paths = False
+test_path_convergence = True
 
 # Inputs for testing barriers
 T = 300
@@ -34,7 +35,7 @@ sigma = large_barrier / 3
 
 if parallel_pores:
 
-    n_paths = 1000
+    n_paths = 50
     n_jumps = 50
     fill = True
 
@@ -499,3 +500,44 @@ if estimate_dH_dS_spread:
     plt.ylabel('$\Delta H_{eff}$')
     plt.savefig('tmp_dH.png')
     plt.show()
+
+if test_path_convergence:
+
+    # Increasing number of paths to see how effective barrier changes (when it stabilizes)
+    n_paths = np.array([1,5,10,50,100,500,1000,5000,10_000,50_000,int(1e5)])
+
+    # Inputs for testing
+    T = 300
+    barrier = 10
+    sigma = barrier / 3
+
+    n_jumps = 50
+
+    dist = 'normal'
+    params = {'mu' : barrier, 'sigma' : sigma}
+
+    effective_barriers = np.zeros(len(n_paths))
+    permeabilities = np.zeros(len(n_paths))
+
+    for i,N in enumerate(n_paths):
+
+        print(f'N: {N}')
+        model = EyringModel(T=T)
+        for n in tqdm(range(N)):
+            model.add_Path(dist=dist, dist_params=params, n_jumps=n_jumps, lam=10) # 10 Angstrom jump lengths over 50 jumps = 500 Angstrom thickness
+            
+        effective_barriers[i] = model.calculate_effective_barrier()
+        permeabilities[i] = model.calculate_permeability()
+
+    fig = plt.figure()
+    plt.plot(n_paths, effective_barriers)
+    plt.xlabel('number of paths')
+    plt.ylabel('effective barriers')
+
+    fig = plt.figure()
+    plt.plot(n_paths, permeabilities / n_paths)
+    plt.xlabel('number of paths')
+    plt.ylabel('permeability per path')
+    plt.show()
+
+    print(permeabilities / n_paths)
