@@ -21,10 +21,10 @@ parallel_pores = False
 compare_effective_barriers = False
 estimate_dH_dS_barrier_distributions = False
 estimate_dH_dS_jump_distributions = False
-estimate_dH_dS_spread = False
+estimate_dH_dS_spread = True
 compare_jump_lengths = False
 plot_paths = False
-test_path_convergence = True
+test_path_convergence = False
 
 # Inputs for testing barriers
 T = 300
@@ -450,55 +450,99 @@ if compare_jump_lengths:
 
 if estimate_dH_dS_spread:
 
-    n_paths = 50
-    temps = [250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*10
-    barrier = large*R*300
-    sigmas = np.array([1/10, 1/9, 1/8, 1/7, 1/6, 1/5, 1/4, 1/3, 1/2, 1]*10)*barrier
+    n_paths = 1200
+    temps = np.array([250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350]*3)
 
+    dG_eff = np.zeros(len(temps))
+    P = np.zeros(len(temps))
     X = np.zeros(len(temps))
     Y = np.zeros(len(temps))
-    dH = np.zeros(len(sigmas))
-    dS = np.zeros(len(sigmas))
 
-    # NORMAL DISTRIBUTIONS OF BARRIERS
+    # MULTIVARIATE NORMAL
+
+    print('\nMULTIVARIATE NORMAL')
+
+    params = {
+        'mu'  : np.array([4.25, -0.021]),
+        'cov' : np.array([[1.5**2,0],
+                          [0,0.005**2]])
+    }
 
     dist = 'normal'
+    multi = True
 
-    for s,sig in tqdm(enumerate(sigmas)):
+    for i, T in tqdm(enumerate(temps)):
+        model = EyringModel(T=T)
+        for n in range(n_paths):
+            model.add_Path(n_jumps=200, lam=10)
+            model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
 
-        for i,T in enumerate(temps):
-            model = EyringModel(T=T)
-            for n in range(n_paths):
-                model.add_Path(dist=dist, dist_params={'mu' : barrier, 'sigma' : sig})
+        dG_eff[i] = model.calculate_effective_barrier()
+        P[i] = model.calculate_permeability()
+        lam = model.get_lambda()
+        delta = np.array(model.deltas).mean()
+        X[i] = 1 / T
+        Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
 
-            P = model.calculate_permeability()
-            lam = model.get_lambda()
-            delta = np.array(model.deltas).mean()
-            X[i] = 1 / T
-            Y[i] = np.log(P*h*delta / (kB*T*lam**2))
+    m, b = np.polyfit(X,Y,1)
+    print(f'dH_eff : {-m*R}')
+    print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
 
-        m, b = np.polyfit(X,Y,1)
-        dH[s] = -m*R
-        dS[s] = b*R
-    
-    df = pd.DataFrame()
-    df['sigma'] = sigmas
-    df['enthalpy'] = dH
-    df['entropy'] = dS
-    
+    df1 = pd.DataFrame()
+    df1['distribution'] = ['multi-variate normal']*len(temps)
+    df1['temperature'] = temps
+    df1['permeability'] = P
+    df1['effective free energy'] = dG_eff
+    df1['1/T'] = X
+    df1['ln(P h del / kB T lam^2)'] = Y
 
-    # fig, ax = plt.subplots(1,2, figsize=(18,5))
-    # sns.lineplot(data=df, x='sigma', y='enthalpy', ax=ax[0])
-    # sns.lineplot(data=df, x='sigma', y='entropy', ax=ax[1])
-    # ax[0].set_xlabel('$\sigma$ for individual membrane barrier distributions')
-    # ax[1].set_xlabel('$\sigma$ for individual membrane barrier distributions')
-    # ax[0].set_ylabel('$\Delta H_{eff}$')
-    # ax[1].set_ylabel('$\Delta S_{eff}$')
+    # MULTIPLE EXPONENTIALS
 
-    sns.lineplot(data=df, x='sigma', y='enthalpy')
-    plt.xlabel('$\sigma$ for individual membrane barrier distributions')
-    plt.ylabel('$\Delta H_{eff}$')
-    plt.savefig('tmp_dH.png')
+    print('\nMULTIPLE EXPONENTIALS:')
+
+    params = {
+        'beta'  : np.array([4.25, 0.021]),
+    }
+
+    dist = 'exponential'
+    multi = True
+
+    for i, T in tqdm(enumerate(temps)):
+        model = EyringModel(T=T)
+        for n in range(n_paths):
+            model.add_Path(n_jumps=200, lam=10)
+            model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+
+        dG_eff[i] = model.calculate_effective_barrier()
+        P[i] = model.calculate_permeability()
+        lam = model.get_lambda()
+        delta = np.array(model.deltas).mean()
+        X[i] = 1 / T
+        Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
+
+    m, b = np.polyfit(X,Y,1)
+    print(f'dH_eff : {-m*R}')
+    print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
+
+    df2 = pd.DataFrame()
+    df2['distribution'] = ['multiple exponentials']*len(temps)
+    df2['temperature'] = temps
+    df2['permeability'] = P
+    df2['effective free energy'] = dG_eff
+    df2['1/T'] = X
+    df2['ln(P h del / kB T lam^2)'] = Y
+
+    df = pd.concat((df1,df2))
+
+    sns.lmplot(data=df, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
+               scatter_kws={'alpha':0.75, 'edgecolor':'black'})
+
+    plt.figure()
+    sns.scatterplot(data=df, x='temperature', y='permeability', hue='distribution')
+
+    plt.figure()
+    sns.scatterplot(data=df, x='temperature', y='effective free energy', hue='distribution')
+
     plt.show()
 
 if test_path_convergence:

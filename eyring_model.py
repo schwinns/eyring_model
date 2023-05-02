@@ -119,6 +119,8 @@ class Path:
         # Set some initial values
         self.seed = None
         self.membrane_barriers = None
+        self.enthalpic_barriers = None
+        self.entropic_barriers = None
 
         # Default values for some parameters
         self.generate_membrane_barriers(dist=dist, dist_params=dist_params)
@@ -157,11 +159,23 @@ class Path:
             elif 'cov' not in dist_params.keys():
                 raise DistributionError("'cov' must be a key in distribution parameters for a multivariate normal distribution")
             
-            # generate barrier distribution and enthalpy distribution
+            # generate enthalpy and entropy distributions
             multi_norm = rng.multivariate_normal(mean=dist_params['mu'], cov=dist_params['cov'], size=self.n_jumps)
-            print(multi_norm.shape)
-            self.membrane_barriers = multi_norm[:,0] # should be first value in mean and covariance
-            self.enthalpic_barriers = multi_norm[:,1] # second value in mean and covariance
+            self.enthalpic_barriers = multi_norm[:,0]
+            self.entropic_barriers = multi_norm[:,1]
+            self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG from dH and dS
+
+        elif multi and dist in ['exponential', 'exp']: # multiple exponential distributions of barriers
+            # Raise an error if the correct parameters are not provided
+            if 'beta' not in dist_params.keys():
+                raise DistributionError("'beta' must be a key in distribution parameters for an exponential distribution")
+
+            # NOTE: assuming no covariance here, so drawing from two independent exponential distributions with means beta
+
+            # generate enthalpy and entropy distributions
+            self.enthalpic_barriers = rng.exponential(scale=dist_params['beta'][0], size=self.n_jumps)
+            self.entropic_barriers = -rng.exponential(scale=dist_params['beta'][1], size=self.n_jumps)
+            self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG
 
         elif dist in ['normal', 'N', 'norm']: # normal distribution of barriers
             # Raise an error if the correct parameters are not provided
@@ -208,7 +222,7 @@ class Path:
         if not multi:
             return self.membrane_barriers
         else:
-            return self.membrane_barriers, self.enthalpic_barriers
+            return self.membrane_barriers, self.enthalpic_barriers, self.entropic_barriers
 
     
     def generate_jump_distribution(self, dist=None, dist_params={'mu' : 2}, seed=None):
@@ -293,11 +307,14 @@ class Path:
             temp = T
 
         A = h / (kB*temp) / 60 / 60
-        exp = np.exp(- self.membrane_barriers / (R*temp))
         lam = self.jump_lengths / 10**10
-        S = np.sum( 1 / (lam * exp) )
 
-        return A*S # units = h / m
+        if self.enthalpic_barriers is None:
+            exp = np.exp(- self.membrane_barriers / (R*temp))
+        else:
+            exp = np.exp(-(self.enthalpic_barriers - temp*self.entropic_barriers) / (R*temp))
+
+        return A*np.sum( 1 / (lam * exp) ) # units = h / m
 
 
     def _P_interfacial_barriers(self, T=None):
