@@ -548,7 +548,7 @@ if estimate_dH_dS_spread:
 if test_path_convergence:
 
     # Increasing number of paths to see how effective barrier changes (when it stabilizes)
-    n_paths = np.array([1,5,10,50,100,500,1000,5000,10_000,50_000,int(1e5)])
+    n_paths = np.array([50,100,500,1000,5000,10_000,20_000,30_000,40_000,50_000,75_000,int(1e5)])
 
     # Inputs for testing
     T = 300
@@ -574,14 +574,14 @@ if test_path_convergence:
         permeabilities[i] = model.calculate_permeability()
 
     fig = plt.figure()
-    plt.plot(n_paths, effective_barriers)
+    plt.plot(n_paths, effective_barriers, label='effective barrier')
+    plt.plot(n_paths, barrier-R*T*np.log(n_paths), ls='dashed', c='r', label='equal barrier limit')
     plt.xlabel('number of paths')
-    plt.ylabel('effective barriers')
+    plt.ylabel('effective barrier')
+    plt.legend()
 
     fig = plt.figure()
     plt.plot(n_paths, permeabilities / n_paths)
     plt.xlabel('number of paths')
     plt.ylabel('permeability per path')
     plt.show()
-
-    print(permeabilities / n_paths)
