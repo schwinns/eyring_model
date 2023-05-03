@@ -21,10 +21,10 @@ parallel_pores = False
 compare_effective_barriers = False
 estimate_dH_dS_barrier_distributions = False
 estimate_dH_dS_jump_distributions = False
-estimate_dH_dS_spread = False
+estimate_dH_dS_spread = True
 compare_jump_lengths = False
 plot_paths = False
-test_path_convergence = True
+test_path_convergence = False
 
 # Inputs for testing barriers
 T = 300
@@ -504,7 +504,10 @@ if estimate_dH_dS_spread:
 if test_path_convergence:
 
     # Increasing number of paths to see how effective barrier changes (when it stabilizes)
-    n_paths = np.array([50,100,500,1000,5000,10_000,20_000,30_000,40_000,50_000,75_000,int(1e5)])
+    n_paths = np.array([50,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,
+                        1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,
+                        3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300,
+                        4400,4500,4600,4700,4800,4900,5000])
 
     # Inputs for testing
     T = 300
@@ -530,11 +533,12 @@ if test_path_convergence:
         permeabilities[i] = model.calculate_permeability()
 
     fig = plt.figure()
-    plt.plot(n_paths, effective_barriers, label='effective barrier')
-    plt.plot(n_paths, barrier-R*T*np.log(n_paths), ls='dashed', c='r', label='equal barrier limit')
+    # plt.plot(n_paths, effective_barriers, label='effective barrier')
+    # plt.plot(n_paths, barrier-R*T*np.log(n_paths), ls='dashed', c='r', label='equal barrier limit')
+    plt.plot(n_paths, effective_barriers + R*T*np.log(n_paths))
     plt.xlabel('number of paths')
     plt.ylabel('effective barrier')
-    plt.legend()
+    # plt.legend()
 
     fig = plt.figure()
     plt.plot(n_paths, permeabilities / n_paths)
