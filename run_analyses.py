@@ -463,9 +463,9 @@ if estimate_dH_dS_spread:
     print('\nMULTIVARIATE NORMAL')
 
     params = {
-        'mu'  : np.array([4.25, -0.021]),
+        'mu'  : np.array([4.5, 6]),
         'cov' : np.array([[0.001**2,0],
-                          [0,0.0001**2]])
+                          [0,0.001**2]])
     }
 
     dist = 'normal'
@@ -477,8 +477,8 @@ if estimate_dH_dS_spread:
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
 
-        dG_eff[i] = model.calculate_effective_barrier()
         P[i] = model.calculate_permeability()
+        dG_eff[i] = model.calculate_effective_barrier()
         lam = model.get_lambda()
         delta = np.array(model.deltas).mean()
         X[i] = 1 / T
@@ -487,16 +487,18 @@ if estimate_dH_dS_spread:
     m, b = np.polyfit(X,Y,1)
     print(f'dH_eff : {-m*R}')
     print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
+    print(f'dG_eff at 300 K: {dG_eff.mean()}')
 
     df1 = pd.DataFrame()
     df1['distribution'] = ['multi-variate normal']*len(temps)
     df1['temperature'] = temps
     df1['permeability'] = P
+    df1['log permeability'] = np.log(P)
     df1['effective free energy'] = dG_eff
     df1['1/T'] = X
     df1['ln(P h del / kB T lam^2)'] = Y
 
-    # MULTIPLE EXPONENTIALS
+    # # MULTIPLE EXPONENTIALS
 
     # print('\nMULTIPLE EXPONENTIALS:')
 
@@ -536,15 +538,16 @@ if estimate_dH_dS_spread:
 
     sns.lmplot(data=df1, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
                scatter_kws={'alpha':0.75, 'edgecolor':'black'})
-    plt.savefig('tmp.png')
 
     plt.figure()
     sns.scatterplot(data=df1, x='temperature', y='permeability', hue='distribution')
-    plt.savefig('tmp1.png')
+
+    plt.figure()
+    sns.scatterplot(data=df1, x='temperature', y='log permeability')
 
     plt.figure()
     sns.scatterplot(data=df1, x='temperature', y='effective free energy', hue='distribution')
-    plt.savefig('tmp2.png')
+
     plt.show()
 
 if test_path_convergence:
