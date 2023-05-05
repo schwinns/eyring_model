@@ -162,8 +162,12 @@ class Path:
             # generate enthalpy and entropy distributions
             multi_norm = rng.multivariate_normal(mean=dist_params['mu'], cov=dist_params['cov'], size=self.n_jumps)
             self.enthalpic_barriers = multi_norm[:,0]
-            self.entropic_barriers = multi_norm[:,1]
+            self.entropic_barriers = -multi_norm[:,1] / self.T
             self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG from dH and dS
+
+            # plt.hist(self.enthalpic_barriers, color='r', alpha=0.5, edgecolor='k')
+            # plt.hist(-self.T*self.entropic_barriers, color='b', alpha=0.5, edgecolor='k')
+            # plt.show()
 
         elif multi and dist in ['exponential', 'exp']: # multiple exponential distributions of barriers
             # Raise an error if the correct parameters are not provided
@@ -308,12 +312,8 @@ class Path:
 
         A = h / (kB*temp) / 60 / 60
         lam = self.jump_lengths / 10**10
-
-        if self.enthalpic_barriers is None:
-            exp = np.exp(- self.membrane_barriers / (R*temp))
-        else:
-            exp = np.exp(-(self.enthalpic_barriers - temp*self.entropic_barriers) / (R*temp))
-
+        exp = np.exp(- self.membrane_barriers / (R*temp))
+    
         return A*np.sum( 1 / (lam * exp) ) # units = h / m
 
 

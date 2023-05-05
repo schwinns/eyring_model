@@ -463,9 +463,9 @@ if estimate_dH_dS_spread:
     print('\nMULTIVARIATE NORMAL')
 
     params = {
-        'mu'  : np.array([4.25, -0.021]),
-        'cov' : np.array([[1.5**2,0],
-                          [0,0.005**2]])
+        'mu'  : np.array([4.5, 6]),
+        'cov' : np.array([[0.001**2,0],
+                          [0,0.001**2]])
     }
 
     dist = 'normal'
@@ -477,8 +477,8 @@ if estimate_dH_dS_spread:
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
 
-        dG_eff[i] = model.calculate_effective_barrier()
         P[i] = model.calculate_permeability()
+        dG_eff[i] = model.calculate_effective_barrier()
         lam = model.get_lambda()
         delta = np.array(model.deltas).mean()
         X[i] = 1 / T
@@ -487,61 +487,66 @@ if estimate_dH_dS_spread:
     m, b = np.polyfit(X,Y,1)
     print(f'dH_eff : {-m*R}')
     print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
+    print(f'dG_eff at 300 K: {dG_eff.mean()}')
 
     df1 = pd.DataFrame()
     df1['distribution'] = ['multi-variate normal']*len(temps)
     df1['temperature'] = temps
     df1['permeability'] = P
+    df1['log permeability'] = np.log(P)
     df1['effective free energy'] = dG_eff
     df1['1/T'] = X
     df1['ln(P h del / kB T lam^2)'] = Y
 
-    # MULTIPLE EXPONENTIALS
+    # # MULTIPLE EXPONENTIALS
 
-    print('\nMULTIPLE EXPONENTIALS:')
+    # print('\nMULTIPLE EXPONENTIALS:')
 
-    params = {
-        'beta'  : np.array([4.25, 0.021]),
-    }
+    # params = {
+    #     'beta'  : np.array([4.25, 0.021]),
+    # }
 
-    dist = 'exponential'
-    multi = True
+    # dist = 'exponential'
+    # multi = True
 
-    for i, T in tqdm(enumerate(temps)):
-        model = EyringModel(T=T)
-        for n in range(n_paths):
-            model.add_Path(n_jumps=200, lam=10)
-            model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+    # for i, T in tqdm(enumerate(temps)):
+    #     model = EyringModel(T=T)
+    #     for n in range(n_paths):
+    #         model.add_Path(n_jumps=200, lam=10)
+    #         model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
 
-        dG_eff[i] = model.calculate_effective_barrier()
-        P[i] = model.calculate_permeability()
-        lam = model.get_lambda()
-        delta = np.array(model.deltas).mean()
-        X[i] = 1 / T
-        Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
+    #     dG_eff[i] = model.calculate_effective_barrier()
+    #     P[i] = model.calculate_permeability()
+    #     lam = model.get_lambda()
+    #     delta = np.array(model.deltas).mean()
+    #     X[i] = 1 / T
+    #     Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
 
-    m, b = np.polyfit(X,Y,1)
-    print(f'dH_eff : {-m*R}')
-    print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
+    # m, b = np.polyfit(X,Y,1)
+    # print(f'dH_eff : {-m*R}')
+    # print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
 
-    df2 = pd.DataFrame()
-    df2['distribution'] = ['multiple exponentials']*len(temps)
-    df2['temperature'] = temps
-    df2['permeability'] = P
-    df2['effective free energy'] = dG_eff
-    df2['1/T'] = X
-    df2['ln(P h del / kB T lam^2)'] = Y
+    # df2 = pd.DataFrame()
+    # df2['distribution'] = ['multiple exponentials']*len(temps)
+    # df2['temperature'] = temps
+    # df2['permeability'] = P
+    # df2['effective free energy'] = dG_eff
+    # df2['1/T'] = X
+    # df2['ln(P h del / kB T lam^2)'] = Y
 
-    df = pd.concat((df1,df2))
+    # df = pd.concat((df1,df2))
 
-    sns.lmplot(data=df, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
+    sns.lmplot(data=df1, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
                scatter_kws={'alpha':0.75, 'edgecolor':'black'})
 
     plt.figure()
-    sns.scatterplot(data=df, x='temperature', y='permeability', hue='distribution')
+    sns.scatterplot(data=df1, x='temperature', y='permeability', hue='distribution')
 
     plt.figure()
-    sns.scatterplot(data=df, x='temperature', y='effective free energy', hue='distribution')
+    sns.scatterplot(data=df1, x='temperature', y='log permeability')
+
+    plt.figure()
+    sns.scatterplot(data=df1, x='temperature', y='effective free energy', hue='distribution')
 
     plt.show()
 
