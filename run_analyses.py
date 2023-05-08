@@ -24,7 +24,7 @@ estimate_dH_dS_jump_distributions = False
 estimate_dH_dS_spread = False
 compare_jump_lengths = False
 plot_paths = False
-test_path_convergence = True
+test_path_convergence = False
 
 # Inputs for testing barriers
 T = 300

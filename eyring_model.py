@@ -178,8 +178,18 @@ class Path:
 
             # generate enthalpy and entropy distributions
             self.enthalpic_barriers = rng.exponential(scale=dist_params['beta'][0], size=self.n_jumps)
-            self.entropic_barriers = -rng.exponential(scale=dist_params['beta'][1], size=self.n_jumps)
+            self.entropic_barriers = -rng.exponential(scale=dist_params['beta'][1], size=self.n_jumps) / self.T
             self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG
+
+        elif multi and dist in ['equal', 'single', 'none', None]: # no distribution of barriers -- assumes single barrier
+            # Raise an error if the correct parameters are not provided
+            if 'mu' not in dist_params.keys():
+                raise DistributionError("'mu' must be a key in distribution parameters for no distribution of barriers")
+
+            # generate barrier distributions
+            self.enthalpic_barriers = np.ones(self.n_jumps) * dist_params['mu'][0]
+            self.entropic_barriers = -np.ones(self.n_jumps) * dist_params['mu'][1] / self.T
+            self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers
 
         elif dist in ['normal', 'N', 'norm']: # normal distribution of barriers
             # Raise an error if the correct parameters are not provided
