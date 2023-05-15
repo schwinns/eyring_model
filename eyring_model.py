@@ -165,10 +165,6 @@ class Path:
             self.entropic_barriers = multi_norm[:,1]
             self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG from dH and dS
 
-            # plt.hist(self.enthalpic_barriers, color='r', alpha=0.5, edgecolor='k')
-            # plt.hist(-self.T*self.entropic_barriers, color='b', alpha=0.5, edgecolor='k')
-            # plt.show()
-
         elif multi and dist in ['exponential', 'exp']: # multiple exponential distributions of barriers
             # Raise an error if the correct parameters are not provided
             if 'beta' not in dist_params.keys():
@@ -178,7 +174,7 @@ class Path:
 
             # generate enthalpy and entropy distributions
             self.enthalpic_barriers = rng.exponential(scale=dist_params['beta'][0], size=self.n_jumps)
-            self.entropic_barriers = -rng.exponential(scale=dist_params['beta'][1], size=self.n_jumps) / self.T
+            self.entropic_barriers = -rng.exponential(scale=-dist_params['beta'][1], size=self.n_jumps)
             self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers # calculate dG
 
         elif multi and dist in ['equal', 'single', 'none', None]: # no distribution of barriers -- assumes single barrier
@@ -188,7 +184,7 @@ class Path:
 
             # generate barrier distributions
             self.enthalpic_barriers = np.ones(self.n_jumps) * dist_params['mu'][0]
-            self.entropic_barriers = -np.ones(self.n_jumps) * dist_params['mu'][1] / self.T
+            self.entropic_barriers = np.ones(self.n_jumps) * dist_params['mu'][1]
             self.membrane_barriers = self.enthalpic_barriers - self.T*self.entropic_barriers
 
         elif dist in ['normal', 'N', 'norm']: # normal distribution of barriers
