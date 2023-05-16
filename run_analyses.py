@@ -611,7 +611,119 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     plt.show()
 
 
+def fixed_jump_length(dH_barrier, dS_barrier, n_paths=2000, T=300, multi=True):
+
+    dist = 'equal'
+    params = params = {'mu'  : np.array([dH_barrier, dS_barrier])}
+
+    lam = 10 # fixed 10 Angstrom jump length
+    n_jumps = np.array([10,20,30,40,50,100,200,300,400,500,1000]) # changing number of jumps
     
+    permeabilities = np.zeros(len(n_jumps))
+    deltas = np.zeros(len(n_jumps))
+    effective_barriers = np.zeros(len(n_jumps))
+        
+    for i,nj in tqdm(enumerate(n_jumps)):
+
+        model = EyringModel(T=T)
+
+        # add all parallel paths
+        for n in range(n_paths):
+            model.add_Path(n_jumps=nj, lam=lam)
+            model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+    
+        permeabilities[i] = model.calculate_permeability()
+        deltas[i] = np.array(model.deltas).mean()
+        effective_barriers[i] = model.calculate_effective_barrier()
+
+    df = pd.DataFrame()
+    df['jumps'] = n_jumps
+    df['permeability'] = permeabilities
+    df['thickness'] = deltas
+    df['effective_barriers'] = effective_barriers
+
+    sns.scatterplot(data=df, x='jumps', y='effective_barriers')
+    plt.show()
+
+    sns.scatterplot(data=df, x='thickness', y='permeability')
+    plt.show()
+
+
+def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
+
+    multi = True
+    dist = 'normal'
+
+    sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
+    # dH_sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
+    # dS_sigs = np.array([10e-5, 10e-4, 5e-4, 1e-4, 5e-3, 1e-3, 0.05, 0.01, 0.1, 0.5, 1, 2, 3])
+
+    # save data per path for ROC curves
+    perm_per_path = np.zeros(n_paths*len(sigs)**2)
+    perm_percent = np.zeros(n_paths*len(sigs)**2)
+    models_dH = np.zeros(n_paths*len(sigs)**2)
+    models_dS = np.zeros(n_paths*len(sigs)**2)
+    models = np.zeros(n_paths*len(sigs)**2)
+
+    # save data for overall model
+    effective_barriers = np.zeros(len(sigs)**2)
+    permeabilities = np.zeros(len(sigs)**2)
+    max_barriers = np.zeros(len(sigs)**2)
+    max_enthalpies = np.zeros(len(sigs)**2)
+    max_entropies = np.zeros(len(sigs)**2)
+    dH_sigmas = np.zeros(len(sigs)**2)
+    dS_sigmas = np.zeros(len(sigs)**2)
+    i = 0
+    for dH_sig in tqdm(sigs):
+        for dS_sig in sigs:
+
+            model = EyringModel(T=T)
+            params = {'mu'  : np.array([dH_barrier, dS_barrier]),
+                    'cov' : np.array([[dH_sig**2,0],
+                                        [0,dS_sig**2]])}
+    
+            dH_max = -10e8
+            dS_max = -10e8
+            dG_max = -10e8
+            for n in range(n_paths):
+                model.add_Path(lam=10)
+                model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+                dH_max = max(dH_max, model.paths[n].enthalpic_barriers.max())
+                dS_max = max(dS_max, model.paths[n].entropic_barriers.max())
+                dG_max = max(dG_max, model.paths[n].membrane_barriers.max())
+
+            dH_sigmas[i] = dH_sig
+            dS_sigmas[i] = dS_sig
+            effective_barriers[i] = model.calculate_effective_barrier()
+            permeabilities[i] = model.calculate_permeability()
+            max_barriers[i] = dG_max
+            max_enthalpies[i] = dH_max
+            max_entropies[i] = dS_max
+            perm_per_path[i*n_paths:(i+1)*n_paths] = model.permeabilities
+            perm_percent[i*n_paths:(i+1)*n_paths] = model.permeabilities / model.permeabilities.sum() * 100
+            models_dH[i*n_paths:(i+1)*n_paths] = dH_sig
+            models_dS[i*n_paths:(i+1)*n_paths] = dS_sig
+            models[i*n_paths:(i+1)*n_paths] = i+1
+            i += 1
+
+    df_roc = pd.DataFrame()
+    df_roc['paths'] = np.arange(1,n_paths+1).tolist()*len(sigs)**2
+    df_roc['permeability'] = perm_per_path
+    df_roc['permeability percent'] = perm_percent
+    df_roc['dH sigma'] = models_dH
+    df_roc['dS sigma'] = models_dS
+    df_roc['model'] = models
+    df_roc.to_csv('barrier_variance_ROC.csv', index=False)
+
+    df = pd.DataFrame()
+    df['dH sigma'] = dH_sigmas
+    df['dS sigma'] = dS_sigmas
+    df['effective barrier'] = effective_barriers
+    df['permeability'] = permeabilities
+    df['max barrier'] = max_barriers
+    df['max enthalpic barrier'] = max_enthalpies
+    df['max entropic barrier'] = max_entropies
+    df.to_csv('barrier_variance.csv', index=False)
 
 
 if __name__ == '__main__':
@@ -634,4 +746,6 @@ if __name__ == '__main__':
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
-    show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
+    barrier_variance(dH_barrier, dS_barrier, n_paths=1200, T=T)
