@@ -654,28 +654,29 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
     multi = True
     dist = 'normal'
 
-    sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
-    # dH_sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
-    # dS_sigs = np.array([10e-5, 10e-4, 5e-4, 1e-4, 5e-3, 1e-3, 0.05, 0.01, 0.1, 0.5, 1, 2, 3])
+    # sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
+    dH_sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10])
+    dS_sigs = np.array([10e-5, 10e-4, 5e-4, 1e-4, 5e-3, 1e-3, 0.05, 0.01, 0.1, 0.5, 0.75, 0.9])
+    n_sigs = len(dH_sigs)*len(dS_sigs)
 
     # save data per path for ROC curves
-    perm_per_path = np.zeros(n_paths*len(sigs)**2)
-    perm_percent = np.zeros(n_paths*len(sigs)**2)
-    models_dH = np.zeros(n_paths*len(sigs)**2)
-    models_dS = np.zeros(n_paths*len(sigs)**2)
-    models = np.zeros(n_paths*len(sigs)**2)
+    perm_per_path = np.zeros(n_paths*n_sigs)
+    perm_percent = np.zeros(n_paths*n_sigs)
+    models_dH = np.zeros(n_paths*n_sigs)
+    models_dS = np.zeros(n_paths*n_sigs)
+    models = np.zeros(n_paths*n_sigs)
 
     # save data for overall model
-    effective_barriers = np.zeros(len(sigs)**2)
-    permeabilities = np.zeros(len(sigs)**2)
-    max_barriers = np.zeros(len(sigs)**2)
-    max_enthalpies = np.zeros(len(sigs)**2)
-    max_entropies = np.zeros(len(sigs)**2)
-    dH_sigmas = np.zeros(len(sigs)**2)
-    dS_sigmas = np.zeros(len(sigs)**2)
+    effective_barriers = np.zeros(n_sigs)
+    permeabilities = np.zeros(n_sigs)
+    max_barriers = np.zeros(n_sigs)
+    max_enthalpies = np.zeros(n_sigs)
+    max_entropies = np.zeros(n_sigs)
+    dH_sigmas = np.zeros(n_sigs)
+    dS_sigmas = np.zeros(n_sigs)
     i = 0
-    for dH_sig in tqdm(sigs):
-        for dS_sig in sigs:
+    for dH_sig in tqdm(dH_sigs):
+        for dS_sig in dS_sigs:
 
             model = EyringModel(T=T)
             params = {'mu'  : np.array([dH_barrier, dS_barrier]),
@@ -707,7 +708,7 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
             i += 1
 
     df_roc = pd.DataFrame()
-    df_roc['paths'] = np.arange(1,n_paths+1).tolist()*len(sigs)**2
+    df_roc['paths'] = np.arange(1,n_paths+1).tolist()*n_sigs
     df_roc['permeability'] = perm_per_path
     df_roc['permeability percent'] = perm_percent
     df_roc['dH sigma'] = models_dH
@@ -748,4 +749,4 @@ if __name__ == '__main__':
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-    barrier_variance(dH_barrier, dS_barrier, n_paths=1200, T=T)
+    barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
