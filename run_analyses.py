@@ -656,7 +656,8 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
 
     # sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 10])
     dH_sigs = np.array([0.0001, 0.001, 0.01, 0.05, 0.1, 0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10])
-    dS_sigs = np.array([10e-5, 10e-4, 5e-4, 1e-4, 5e-3, 1e-3, 0.05, 0.01, 0.1, 0.5, 0.75, 0.9])
+    dS_sigs = dH_sigs / T
+    # dS_sigs = np.array([10e-5, 10e-4, 5e-4, 1e-4, 5e-3, 1e-3, 0.05, 0.01, 0.1, 0.5, 0.75, 0.9])
     n_sigs = len(dH_sigs)*len(dS_sigs)
 
     # save data per path for ROC curves
@@ -727,6 +728,103 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
     df.to_csv('barrier_variance.csv', index=False)
 
 
+def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=4, n_jumps_sig=3, T=300):
+
+    from scipy.interpolate import CubicSpline
+
+    model = EyringModel(T=T)
+
+    fig, ax = plt.subplots(2,1, figsize=(12,12))
+
+    all_barriers = []
+    max_barriers = np.zeros((n_paths,2))
+
+    for i in range(n_paths):
+
+        n_jumps = int(np.random.default_rng().normal(loc=n_jumps_mu, scale=n_jumps_sig))
+
+        path = Path(T=T, n_jumps=n_jumps, lam=10)
+        path.generate_jump_distribution(jump_dist, jump_params)
+        path.generate_membrane_barriers(barrier_dist, barrier_params, multi=True)
+        model.paths.append(path)
+        model.deltas.append(path.jump_lengths.sum())
+        
+        for j in range(len(path.jump_lengths)):
+            jump = path.jump_lengths[j]
+            if jump < 0:
+                path.jump_lengths[j] = 0.1
+
+        max_idx = path.membrane_barriers.argmax()
+        max_barriers[i,1] = path.jump_lengths.cumsum()[max_idx]
+        max_barriers[i,0] = path.membrane_barriers[max_idx]
+        [all_barriers.append(b) for b in path.membrane_barriers]
+
+
+    model.n_paths = len(model.paths)
+    dG_eff = model.calculate_effective_barrier() + R*T*np.log(n_paths)
+    
+    min_max_barrier = 10e8
+    for i in range(n_paths):
+        mb = model.paths[i].membrane_barriers.max()
+        if mb < min_max_barrier:
+            min_max_path = model.paths[i]
+            min_max_barrier = mb
+            min_max_idx = i
+
+    print(f'Min maximum index: {min_max_idx}')
+
+    jumps = min_max_path.jump_lengths.cumsum()
+    barriers = min_max_path.membrane_barriers
+
+    path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+    xs = np.linspace(0, jumps.max(), num=300)
+    ys = path_spline(xs)
+    ys[0] = ys.mean()
+    ax[0].plot(xs, ys, c='r', label='smallest maximum barrier path')
+
+    max_perm_path = model.paths[model.permeabilities.argmax()]
+    jumps = max_perm_path.jump_lengths.cumsum()
+    barriers = max_perm_path.membrane_barriers
+
+    path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+    xs = np.linspace(0, jumps.max(), num=300)
+    ys = path_spline(xs)
+    ys[0] = ys.mean()
+    ax[0].plot(xs, ys, c='b', label='maximum permeability path')
+
+    print(f'Max permeability index: {model.permeabilities.argmax()}')
+
+    # min_perm_path = model.paths[model.permeabilities.argmin()]
+    # jumps = min_perm_path.jump_lengths.cumsum()
+    # barriers = min_perm_path.membrane_barriers
+
+    # path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+    # xs = np.linspace(0, jumps.max(), num=300)
+    # ys = path_spline(xs)
+    # ys[0] = ys.mean()
+    # ax[0].plot(xs, ys, c='brown', label='minimum permeability path')
+
+
+    if barrier_dist not in ['exp','exponential'] and min_max_idx == model.permeabilities.argmax():
+        exit()
+
+    ax[0].scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers')
+    sns.histplot(all_barriers, binwidth=1, edgecolor='k', ax=ax[1], stat='density')
+
+    ymin, ymax = ax[1].get_ylim()
+    xmin, xmax = ax[0].get_xlim()
+    ax[0].axhline(dG_eff, ls='dashed', c='limegreen')
+    ax[0].text(xmax*0.85, dG_eff-5, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left')
+    ax[1].axvline(dG_eff, ls='dashed', c='k')
+    ax[1].text(dG_eff+0.5, ymax*0.9, '$\Delta G_{eff}$ + RT$\ln(n)$')
+
+    ax[0].set_xlabel('transport coordinate (Angstroms)')
+    ax[0].set_ylabel('$\Delta G_{m,i,j}$')
+    ax[1].set_xlabel('$\Delta G_{m,i,j}$')
+    ax[0].legend()
+    plt.show()
+
+
 if __name__ == '__main__':
 
     # Inputs for testing barriers
@@ -750,3 +848,14 @@ if __name__ == '__main__':
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
     barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
+
+    avg_jumps = 40
+    jump_dist = 'norm'
+    jump_params = {'mu' : 10,
+                   'sigma' : 2.5}
+    barrier_dist = 'exp'
+    barrier_params = {'beta' : np.array([dH_barrier, dS_barrier])}#,
+                    #   'cov': np.array([[dH_sigma**2, 0],
+                                    #    [0, dS_sigma**2]])}
+
+    # vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)

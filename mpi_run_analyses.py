@@ -3,6 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpi4py import MPI
+from time import perf_counter as timer
 
 from eyring_model import EyringModel, Path
 
@@ -14,36 +15,27 @@ h = 6.62607 * 10**-34      # Planck (m^2 kg / s)
 global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
-# Choose what analyses to run
-test_path_convergence = True
-estimate_effective_dH_dS = False
+def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist, T=300, multi=True):
 
-# Inputs for testing barriers
-T = 300
-large = 18
-large_barrier = large*R*T
-small_barrier = large_barrier / 2
-sigma = large_barrier / 3
-
-if test_path_convergence:
+    if dist in ['normal', 'N', 'norm']:
+        params = {'mu'  : np.array([dH_barrier, dS_barrier]),
+                  'cov' : np.array([[dH_sigma**2,0],
+                                    [0,dS_sigma**2]])}
+    
+    elif dist in ['exponential', 'exp']:
+        params = {'beta' : np.array([dH_barrier, dS_barrier])}
+    
+    elif dist in ['equal', 'single', 'none', None]:
+        params = {'mu' : np.array([dH_barrier, dS_barrier])}
 
     # run this on all available processors
 
-    def calculate_barriers_permeability(N):
-
-        # Inputs for testing
-        T = 300
-        barrier = 10
-        sigma = barrier / 3
-
-        n_jumps = 50
-
-        dist = 'exponential'
-        params = {'beta' : barrier}
+    def calculate_barriers_permeability(N, dist, dist_params, T=T, multi=multi):
 
         model = EyringModel(T=T)
         for n in range(N):
-            model.add_Path(dist=dist, dist_params=params, n_jumps=n_jumps, lam=10) # 10 Angstrom jump lengths over 50
+            model.add_Path(n_jumps=50, lam=10) # 10 Angstrom jump lengths over 50
+            model.paths[n].generate_membrane_barriers(dist=dist, dist_params=dist_params, multi=multi)
 
         return model.calculate_effective_barrier(), model.calculate_permeability()
 
@@ -52,8 +44,12 @@ if test_path_convergence:
     comm = MPI.COMM_WORLD
     nprocs = comm.Get_size()
     rank = comm.Get_rank()
+    
+    my_start = timer()
 
     if rank == 0:
+        print(f'\n{nprocs} processors calculating the path convergence of {dist} distributions of barriers')
+
         fig1, ax1 = plt.subplots(1,1)
         fig2, ax2 = plt.subplots(1,1)
         
@@ -61,7 +57,8 @@ if test_path_convergence:
         n_paths = np.array([50,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,
                         1600,1700,1800,1900,2000,2100,2200,2300,2400,2500,2600,2700,2800,2900,
                         3000,3100,3200,3300,3400,3500,3600,3700,3800,3900,4000,4100,4200,4300,
-                        4400,4500,4600,4700,4800,4900,5000], dtype='i')
+                        4400,4500,4600,4700,4800,4900,5000,5500,6000,6500,7000,
+                        7500,8000,8500,9000,9500,10_000], dtype='i')
         
         # split up n_paths for each proc
         ave, res = divmod(n_paths.size, nprocs)
@@ -95,14 +92,13 @@ if test_path_convergence:
 
     ########## RUN A BUNCH OF REALIZATIONS ##########
 
-    realizations = 100
     for r in range(realizations):
 
         if rank == 0:
             print(f'Realization {r+1}...')
 
         for i,N in enumerate(my_paths):
-            effective_barriers[i], permeabilities[i] = calculate_barriers_permeability(N)
+            effective_barriers[i], permeabilities[i] = calculate_barriers_permeability(N, dist, params)
 
         # create big arrays for Gather
         all_barriers = np.zeros(sum(count))
@@ -122,6 +118,8 @@ if test_path_convergence:
         
 
     if rank == 0:
+        data = np.column_stack((n_paths, avg_barrier/realizations, avg_permeability/realizations))
+        np.savetxt(f'avg_convergence_{dist}_{realizations}iter.csv', data, delimiter=',')
         ax1.plot(n_paths, avg_barrier / realizations, c='r')
         ax2.plot(n_paths, avg_permeability / realizations, c='r')
 
@@ -131,7 +129,25 @@ if test_path_convergence:
         ax2.set_ylabel('permeability per path')
         plt.show()
 
+    my_end = timer()
+    print(f'Total time for rank {rank}: {my_end - my_start:.2f} s')
 
-if estimate_effective_dH_dS:
 
-    n_paths = 1200
+if __name__ == "__main__":
+
+    # Inputs
+    iters = 300
+    T = 300
+    multi = True
+    dH_barrier = 4.5
+    dS_barrier = -6/300
+    dH_sigma = 1.5
+    dS_sigma = 2/300
+
+    dG_barrier = dH_barrier - T*dS_barrier
+
+    # normal distributions
+    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
+
+    # exponential distributions
+    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)
