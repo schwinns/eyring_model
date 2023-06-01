@@ -6,6 +6,8 @@ import pandas as pd
 import seaborn as sns
 from tqdm import tqdm
 
+from scipy.interpolate import CubicSpline
+
 from eyring_model import EyringModel, Path
 
 # Define global constants
@@ -174,13 +176,14 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
               'cov' : np.array([[dH_sigma**2,0],
                                 [0,dS_sigma**2]])}
 
-    model = Path(T=T)
+    model = Path(T=T, n_jumps=200)
     model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
     dG_eff = model.calculate_effective_barrier()
     ax = model.plot_distribution(hist=True, color='tab:blue', binwidth=1, label='normal')
     ymin, ymax = plt.ylim()
     ax.axvline(dG_eff, ls='dashed', c='tab:blue')
-    ax.text(dG_eff*1.1, ymax*0.9, '$\Delta G_{eff}$')
+    ax.text(dG_eff*1.05, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:blue', fontsize=14)
+
     ax1[0].scatter(-T*model.entropic_barriers, model.enthalpic_barriers, edgecolor='k', color='tab:blue')
     ax1[0].set_xlabel('$-T\Delta S$')
     ax1[0].set_ylabel('$\Delta H$')
@@ -194,22 +197,24 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
     model.plot_distribution(hist=True, color='tab:orange', binwidth=1, ax=ax, label='exponential')
     ymin, ymax = plt.ylim()
     ax.axvline(dG_eff, ls='dashed', c='tab:orange')
-    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}$')
+    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:orange', fontsize=14)
+
     ax1[1].scatter(-T*model.entropic_barriers, model.enthalpic_barriers, edgecolor='k', color='tab:orange')
     ax1[1].set_xlabel('$-T\Delta S$')
     ax1[1].legend(['exponential'])
     
-    ax.axvline(dG_barrier, c='r')
-    ax.text(dG_barrier*0.5, ymax*0.9, 'mean', ha='left')
-    ax.set_xlabel('$\Delta G_{M,j}$')
-    plt.legend(loc='center')
+    # ax.axvline(dG_barrier, c='r')
+    # ax.text(dG_barrier*0.5, ymax*0.9, 'mean', ha='left', fontsize=14)
+    ax.set_xlabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=14)
+    ax.set_ylabel('Density', fontsize=14)
+    plt.legend(loc='upper left', frameon=False, fontsize=12, ncol=1)
     plt.show()
 
 def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
 
     print(f'\nPlotting 4 realizations of barrier paths through the membrane...')
 
-    fig, ax = plt.subplots(4,1, figsize=(8,20), sharex=True)
+    fig, ax = plt.subplots(4,1, figsize=(10,10), sharex=True)
 
     for i in range(4):
     
@@ -219,28 +224,45 @@ def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
                 'cov' : np.array([[dH_sigma**2,0],
                                   [0,dS_sigma**2]])
                 }
-        model = Path(T=T)
+        model = Path(T=T, n_jumps=100)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
-        ax[i].plot(model.jump_lengths.cumsum(), model.membrane_barriers, color='tab:blue', alpha=0.75, label='normal')
+
+        jumps = model.jump_lengths.cumsum()
+        barriers = model.membrane_barriers
+
+        path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+        xs = np.linspace(0, jumps.max(), num=2000)
+        ys = path_spline(xs)
+
+        ax[i].plot(xs, ys, color='tab:blue', alpha=1, label='normal')
         ax[i].axhline(dG_eff, c='tab:blue', ls='dashed')
-        ax[i].text(-5*model.lam, dG_eff*1.1, '$\Delta G_{eff}$', ha='right')
+        ax[i].text(model.lam, dG_eff*1.2, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=12, color='tab:blue')
 
         dist = 'exponential'
         params = {'beta'  : np.array([dH_barrier, dS_barrier])}
-        model = Path(T=T)
+        model = Path(T=T, n_jumps=100)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
-        ax[i].plot(model.jump_lengths.cumsum(), model.membrane_barriers, color='tab:orange', alpha=0.75, label='exponential')
-        ax[i].axhline(dG_eff, c='tab:orange', ls='dashed')
-        ax[i].text(-5*model.lam, dG_eff*1.05, '$\Delta G_{eff}$', ha='right')
 
-        ax[i].set_ylabel('$\Delta G_{M,j}$')
-        ax[i].legend(loc='upper right')
+        jumps = model.jump_lengths.cumsum()
+        barriers = model.membrane_barriers
+
+        path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+        xs = np.linspace(0, jumps.max(), num=2000)
+        ys = path_spline(xs)
+
+        ax[i].plot(xs, ys, color='tab:orange', alpha=0.75, label='exponential')
+        ax[i].axhline(dG_eff, c='tab:orange', ls='dashed')
+        ax[i].text(model.lam, dG_eff*1.1, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=12, color='tab:orange')
+
+        ax[i].set_ylabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=14)
+        ax[i].legend(loc='upper right', fontsize=12, ncol=2,
+                     frameon=False, borderpad=0.2)
         ax[i].set_ylim(0,dG_eff*1.5)
     
-    ax[i].set_xlim(-20*model.lam,)
-    ax[i].set_xlabel('membrane thickness (Angstroms)')
+    ax[i].set_xlim(-7.5*model.lam,)
+    ax[i].set_xlabel('membrane thickness (Angstroms)', fontsize=14)
     plt.show()
 
 def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, multi=True):
@@ -730,8 +752,6 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
 
 def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=4, n_jumps_sig=3, T=300):
 
-    from scipy.interpolate import CubicSpline
-
     model = EyringModel(T=T)
 
     fig, ax = plt.subplots(2,1, figsize=(12,12))
@@ -827,6 +847,8 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
 
 if __name__ == '__main__':
 
+    plt.rcParams['text.usetex'] = True
+
     # Inputs for testing barriers
     T = 300
     multi = True
@@ -845,9 +867,9 @@ if __name__ == '__main__':
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
-    # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-    barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
+    # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
 
     avg_jumps = 40
     jump_dist = 'norm'
