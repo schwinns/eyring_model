@@ -49,6 +49,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     sns.histplot(all_barriers, edgecolor='black', ax=ax[0], stat='density', color='tab:gray', alpha=0.75)
     permeability = model_equal.calculate_permeability()
     effective_barrier_equal = model_equal.calculate_effective_barrier()
+    std_equal = np.std(all_barriers)
 
     # save data as pandas DataFrame
     df_equal = pd.DataFrame()
@@ -84,6 +85,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     sns.histplot(all_barriers, binwidth=1, edgecolor='black', ax=ax[1], stat='density', color='tab:blue', alpha=0.75)
     permeability = model_norm.calculate_permeability()
     effective_barrier_norm = model_norm.calculate_effective_barrier()
+    std_norm = np.std(all_barriers)
 
     # save data as pandas DataFrame
     df_norm = pd.DataFrame()
@@ -118,6 +120,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     sns.histplot(all_barriers, binwidth=1, edgecolor='black', ax=ax[2], stat='density', color='tab:orange', alpha=0.75)
     permeability = model_exp.calculate_permeability()
     effective_barrier_exp = model_exp.calculate_effective_barrier()
+    std_exp = np.std(all_barriers)
 
     # save data as pandas DataFrame
     df_exp = pd.DataFrame()
@@ -133,28 +136,41 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # PLOTTING
 
     # plot the effective barrier, max barrier, and mean barrier
-    ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$')
-    ax[0].axvline(dG_barrier, ls='dashed', c='r', label='mean')
+    ax[0].axvline(effective_barrier_equal+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[0].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
+    ax[0].axvline(dG_barrier, ls='dashed', c='k', gapcolor='red', dashes=[4,4], lw=2)
     ax[0].legend(frameon=False, fontsize=12)
     ax[0].set_ylabel('Density', fontsize=14)
-    ax[0].set_title(f'Series of equal barriers', fontsize=14)
+    ax[0].set_title(f'Series of equal barriers, standard deviation = 0 kcal/mol', fontsize=14)
 
-    ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$')
-    ax[1].axvline(dG_barrier, ls='dashed', c='r', label='mean')
+    ax[1].axvline(effective_barrier_norm+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[1].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
     ax[1].legend(frameon=False, fontsize=12)
     ax[1].set_ylabel('Density', fontsize=14)
-    ax[1].set_title(f'Normally distributed, standard deviation = {5:.2e}', fontsize=14)
+    ax[1].set_title(f'Normally distributed, standard deviation = {std_norm:.0f} kcal/mol', fontsize=14)
 
-    ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$')
-    ax[2].axvline(dG_barrier, ls='dashed', c='r', label='mean')
+    ax[2].axvline(effective_barrier_exp+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[2].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
     ax[2].legend(frameon=False, fontsize=12)
     ax[2].set_ylabel('Density', fontsize=14)
-    ax[2].set_title(f'Exponentially distributed, standard deviation = {dG_barrier:.2e}', fontsize=14)
+    ax[2].set_title(f'Exponentially distributed, standard deviation = {std_exp:.0f} kcal/mol', fontsize=14)
 
-    ax[2].set_xlabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=14)
+    ax[2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=14)
     ax[2].set_xlim(0,)
 
-    print(effective_barrier_norm.std())
+    plt.suptitle('Membrane barrier distributions for n=50 parallel paths through membrane', fontsize=14)
+
+    print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
+
+    # fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
+    # sns.scatterplot(data=df_norm, x='pores', y='permeability', ax=ax1)
+    # sns.scatterplot(data=df_exp, x='pores', y='permeability', ax=ax1)
+    # print(df_norm.permeability.mean())
+    # print(df_exp.permeability.mean())
+
+    # print(df_norm.permeability.sum())
+    # print(df_exp.permeability.sum())
+
 
     # fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
     # sns.barplot(data=df_norm, x='pores', y='permeability_percent', ax=ax1)
@@ -417,7 +433,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     X = np.zeros(len(temps))
     Y = np.zeros(len(temps))
 
-    fig, ax = plt.subplots(2,2, figsize=(10,10), sharex=True)
+    fig, ax = plt.subplots(2,2, figsize=(10,10), sharex=False)
 
     # MULTIVARIATE NORMAL
 
@@ -434,6 +450,12 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     dH = 0
     dS = 0
 
+    all_dH = {}
+    all_dS = {}
+    for T in temps:
+        all_dH[T] = []
+        all_dS[T] = []
+
     for i, T in tqdm(enumerate(temps)):
         model = EyringModel(T=T)
         for n in range(n_paths):
@@ -442,8 +464,11 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
             dH += model.paths[n].enthalpic_barriers.mean()
             dS += model.paths[n].entropic_barriers.mean()
             if plot and T == 300:
-                sns.histplot(model.paths[n].enthalpic_barriers, edgecolor=None, ax=ax[0,0], stat='density', alpha=0.1, color='cornflowerblue')
-                sns.histplot(-300*model.paths[n].entropic_barriers, edgecolor=None, ax=ax[0,1], stat='density', alpha=0.1, color='lightcoral')
+                [all_dH[T].append(b) for b in model.paths[n].enthalpic_barriers]
+                [all_dS[T].append(b) for b in model.paths[n].entropic_barriers]
+
+        sns.histplot(all_dH[T], binwidth=1, edgecolor='k', ax=ax[0,0], stat='density', alpha=0.5, color='tab:blue')
+        sns.histplot(-T*np.array(all_dS[T]), binwidth=1, edgecolor='k', ax=ax[0,1], stat='density', alpha=0.5, color='tab:blue')
 
         P[i] = model.calculate_permeability() / 60 / 60 / 1000 * 10**9 * 10
         dG_eff[i] = model.calculate_effective_barrier()
@@ -471,18 +496,27 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
 
     if plot:
         # plot effective, single path, mean barriers
-        ax[0,0].set_title('$\Delta H$ normal')
-        ax[0,1].set_title('$-T\Delta S$ normal')
+        ax[0,0].set_title('Normally distributed enthalpic barriers', fontsize=14)
+        ax[0,1].set_title('Normally distributed entropic barriers', fontsize=14)
 
-        ax[0,0].axvline(-m*R, ls='dashed', c='blue', label='effective')
-        ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean')
-        ax[0,0].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[0,0].axvline(-m*R, ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
+        # ax[0,0].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
 
-        ax[0,1].axvline(-300*b*R, ls='dashed', c='blue', label='effective')
-        ax[0,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean')
-        ax[0,1].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[0,1].axvline(-300*b*R, ls='dashed', c='k', label='$-T\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[0,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean', lw=2)
+        # ax[0,1].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
 
-        ax[0,1].legend()
+        # ax[0,0].set_xlabel('$\Delta H_{M,j}^{\ddag}$', fontsize=14)
+        # ax[0,1].set_xlabel('$-T \Delta S_{M,j}^{\ddag}$', fontsize=14)
+        ax[0,0].set_ylabel('Density', fontsize=14)
+        ax[0,1].set_ylabel(None)
+
+        ax[0,0].set_xlim(0,)
+        ax[0,1].set_xlim(0,)
+
+        ax[0,0].legend(fontsize=12, frameon=False, ncol=1)
+        ax[0,1].legend(fontsize=12, frameon=False, ncol=1)
 
     df1 = pd.DataFrame()
     df1['distribution'] = ['multi-variate normal']*len(temps)
@@ -503,6 +537,12 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     dH = 0
     dS = 0
 
+    all_dH = {}
+    all_dS = {}
+    for T in temps:
+        all_dH[T] = []
+        all_dS[T] = []
+
     for i, T in tqdm(enumerate(temps)):
         model = EyringModel(T=T)
         for n in range(n_paths):
@@ -510,9 +550,12 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
             dH += model.paths[n].enthalpic_barriers.mean()
             dS += model.paths[n].entropic_barriers.mean()
-            if plot and T == 300:
-                sns.histplot(model.paths[n].enthalpic_barriers, edgecolor=None, ax=ax[1,0], stat='density', alpha=0.1, color='cornflowerblue')
-                sns.histplot(-300*model.paths[n].entropic_barriers, edgecolor=None, ax=ax[1,1], stat='density', alpha=0.1, color='lightcoral')
+            if plot:
+                [all_dH[T].append(b) for b in model.paths[n].enthalpic_barriers]
+                [all_dS[T].append(b) for b in model.paths[n].entropic_barriers]
+
+        sns.histplot(all_dH[T], binwidth=1, edgecolor='k', ax=ax[1,0], stat='density', alpha=0.5, color='tab:orange')
+        sns.histplot(-T*np.array(all_dS[T]), binwidth=1, edgecolor='k', ax=ax[1,1], stat='density', alpha=0.5, color='tab:orange')
 
         dG_eff[i] = model.calculate_effective_barrier()
         P[i] = model.calculate_permeability()
@@ -548,29 +591,36 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
 
     if plot:
         # plot effective, single path, mean barriers
-        ax[1,0].set_title('$\Delta H$ exponential')
-        ax[1,1].set_title('$-T\Delta S$ exponential')
+        ax[1,0].set_title('Exponentially distributed enthalpic barriers', fontsize=14)
+        ax[1,1].set_title('Exponentially distributed entropic barriers', fontsize=14)
 
-        ax[1,0].axvline(-m*R, ls='dashed', c='blue', label='effective')
-        ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean')
-        ax[1,0].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[1,0].axvline(-m*R, ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
+        
+        ax[1,1].axvline(-300*b*R, ls='dashed', c='k', label='$-T\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[1,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean', lw=2)
+        
+        ax[1,0].set_xlim(0,)
+        ax[1,1].set_xlim(0,)
 
-        ax[1,1].axvline(-300*b*R, ls='dashed', c='blue', label='effective')
-        ax[1,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean')
-        ax[1,1].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
+        ax[1,1].set_xlabel('$-T \Delta S_{M,i,j}^{\ddag}$', fontsize=14)
+        ax[1,0].set_ylabel('Density', fontsize=14)
+        ax[1,1].set_ylabel(None)
 
-        ax[1,1].legend()
+        ax[1,0].legend(fontsize=12, frameon=False, ncol=1)
+        ax[1,1].legend(fontsize=12, frameon=False, ncol=1)
 
-    df = pd.concat((df1,df2))
+    # df = pd.concat((df1,df2))
 
-    sns.lmplot(data=df, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
-               scatter_kws={'alpha':0.75, 'edgecolor':'black'})
+    # sns.lmplot(data=df, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
+    #            scatter_kws={'alpha':0.75, 'edgecolor':'black'})
 
-    plt.figure()
-    sns.scatterplot(data=df, x='temperature', y='permeability', hue='distribution')
+    # plt.figure()
+    # sns.scatterplot(data=df, x='temperature', y='permeability', hue='distribution')
 
-    sns.lmplot(data=df, x='temperature', y='effective free energy', hue='distribution',
-               scatter_kws={'alpha':0.75, 'edgecolor':'black'})
+    # sns.lmplot(data=df, x='temperature', y='effective free energy', hue='distribution',
+    #            scatter_kws={'alpha':0.75, 'edgecolor':'black'})
 
     plt.show()
 
@@ -611,7 +661,7 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     ymin, ymax = ax[0].get_ylim()
     # ax[0].text(xmax*0, effective_barrier, '$\Delta G_{eff}^{\ddag}$', fontsize=12)
     ax[0].text(xmax*0.75, shifted_effective_barrier-0.75, '$\Delta G_{eff}^{\ddag} + RT \ln(n)$', c='r', fontsize=12)
-    ax[0].set_ylabel('$\Delta G_{M,max}^{\ddag}$ (kcal/mol)', fontsize=14)
+    ax[0].set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=14)
     ax[0].set_ylim(ymin-1, ymax)
     ax[0].set_title('Maximum barriers for each path, normally distributed', fontsize=14)
     
@@ -640,8 +690,8 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     xmin, xmax = ax[1].get_xlim()
     ymin, ymax = ax[1].get_ylim()
     # ax[1].text(xmax*0, effective_barrier+1, '$\Delta G_{eff}^{\ddag}$', fontsize=12)
-    ax[1].text(xmax*0.75, shifted_effective_barrier-5, '$\Delta G_{eff}^{\ddag} + RT \ln(n)$', c='r', fontsize=12)
-    ax[1].set_ylabel('$\Delta G_{M,max}^{\ddag}$ (kcal/mol)', fontsize=14)
+    ax[1].text(xmax*0.75, shifted_effective_barrier-6, '$\Delta G_{eff}^{\ddag} + RT \ln(n)$', c='r', fontsize=12)
+    ax[1].set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=14)
     ax[1].set_ylim(ymin-5, ymax)
     ax[1].set_title('Maximum barriers for each path, exponentially distributed', fontsize=14)
     
@@ -766,11 +816,13 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
     df.to_csv('barrier_variance.csv', index=False)
 
 
-def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=4, n_jumps_sig=3, T=300):
+def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=4, n_jumps_sig=3, T=300, plot=True):
 
     model = EyringModel(T=T)
 
-    fig, ax = plt.subplots(2,1, figsize=(12,12))
+    if plot:
+        # fig, ax = plt.subplots(2,1, figsize=(12,12))
+        fig, ax = plt.subplots(1,1, figsize=(12,6))
 
     all_barriers = []
     max_barriers = np.zeros((n_paths,2))
@@ -807,81 +859,97 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
             min_max_barrier = mb
             min_max_idx = i
 
-    print(f'Min maximum index: {min_max_idx}')
+    # print(f'Min maximum index: {min_max_idx}')
 
     jumps = min_max_path.jump_lengths.cumsum()
     barriers = min_max_path.membrane_barriers
 
-    path_spline = CubicSpline(jumps, barriers, bc_type='natural')
-    xs = np.linspace(0, jumps.max(), num=300)
-    ys = path_spline(xs)
-    ys[0] = ys.mean()
-    ax[0].plot(xs, ys, c='r', label='smallest maximum barrier path')
+    if plot:
+        path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+        xs = np.linspace(0, jumps.max(), num=300)
+        ys = path_spline(xs)
+        ys[0] = ys.mean()
+        # ax[0].plot(xs, ys, c='r', label='smallest maximum barrier path')
+        ax.plot(xs, ys, c='r', label='smallest maximum barrier path')
 
     max_perm_path = model.paths[model.permeabilities.argmax()]
     jumps = max_perm_path.jump_lengths.cumsum()
     barriers = max_perm_path.membrane_barriers
 
-    path_spline = CubicSpline(jumps, barriers, bc_type='natural')
-    xs = np.linspace(0, jumps.max(), num=300)
-    ys = path_spline(xs)
-    ys[0] = ys.mean()
-    ax[0].plot(xs, ys, c='b', label='maximum permeability path')
+    if plot:
+        path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+        xs = np.linspace(0, jumps.max(), num=300)
+        ys = path_spline(xs)
+        ys[0] = ys.mean()
+        # ax[0].plot(xs, ys, c='b', label='maximum permeability path')
+        ax.plot(xs, ys, c='b', label='maximum permeability path')
 
-    print(f'Max permeability index: {model.permeabilities.argmax()}')
+    # print(f'Max permeability index: {model.permeabilities.argmax()}')
 
-    # min_perm_path = model.paths[model.permeabilities.argmin()]
-    # jumps = min_perm_path.jump_lengths.cumsum()
-    # barriers = min_perm_path.membrane_barriers
+    if plot:
 
-    # path_spline = CubicSpline(jumps, barriers, bc_type='natural')
-    # xs = np.linspace(0, jumps.max(), num=300)
-    # ys = path_spline(xs)
-    # ys[0] = ys.mean()
-    # ax[0].plot(xs, ys, c='brown', label='minimum permeability path')
+        # min_perm_path = model.paths[model.permeabilities.argmin()]
+        # jumps = min_perm_path.jump_lengths.cumsum()
+        # barriers = min_perm_path.membrane_barriers
 
+        # path_spline = CubicSpline(jumps, barriers, bc_type='natural')
+        # xs = np.linspace(0, jumps.max(), num=300)
+        # ys = path_spline(xs)
+        # ys[0] = ys.mean()
+        # ax[0].plot(xs, ys, c='brown', label='minimum permeability path')
 
-    if barrier_dist not in ['exp','exponential'] and min_max_idx == model.permeabilities.argmax():
-        exit()
+        # if barrier_dist not in ['exp','exponential'] and min_max_idx == model.permeabilities.argmax():
+        #     exit()
 
-    ax[0].scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers')
-    sns.histplot(all_barriers, binwidth=1, edgecolor='k', ax=ax[1], stat='density')
+        # ax[0].scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers')
+        # sns.histplot(all_barriers, binwidth=1, edgecolor='k', ax=ax[1], stat='density')
+        ax.scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers for all paths')
 
-    ymin, ymax = ax[1].get_ylim()
-    xmin, xmax = ax[0].get_xlim()
-    ax[0].axhline(dG_eff, ls='dashed', c='limegreen')
-    ax[0].text(xmax*0.85, dG_eff-5, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left')
-    ax[1].axvline(dG_eff, ls='dashed', c='k')
-    ax[1].text(dG_eff+0.5, ymax*0.9, '$\Delta G_{eff}$ + RT$\ln(n)$')
+        # ymin, ymax = ax[1].get_ylim()
+        # xmin, xmax = ax[0].get_xlim()
+        # ax[0].axhline(dG_eff, ls='dashed', c='limegreen')
+        # ax[0].text(xmax*0.85, dG_eff-5, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left')
+        # ax[1].axvline(dG_eff, ls='dashed', c='k')
+        # ax[1].text(dG_eff+0.5, ymax*0.9, '$\Delta G_{eff}$ + RT$\ln(n)$')
 
-    ax[0].set_xlabel('transport coordinate (Angstroms)')
-    ax[0].set_ylabel('$\Delta G_{m,i,j}$')
-    ax[1].set_xlabel('$\Delta G_{m,i,j}$')
-    ax[0].legend()
-    plt.show()
+        # ax[0].set_xlabel('transport coordinate (Angstroms)')
+        # ax[0].set_ylabel('$\Delta G_{m,i,j}$')
+        # ax[1].set_xlabel('$\Delta G_{m,i,j}$')
+        # ax[0].legend()
+
+        xmin, xmax = ax.get_xlim()
+        ymin, ymax = ax.get_ylim()
+        ax.axhline(dG_eff, ls='dashed', c='limegreen')
+        ax.text(xmax*0.85, dG_eff-1, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left', fontsize=12)
+
+        ax.set_xlabel('transport coordinate (Angstroms)', fontsize=14)
+        ax.set_ylabel('$\Delta G_{M,i,j}$', fontsize=14)
+        ax.set_ylim(ymin, ymax+5)
+        ax.legend(frameon=False, fontsize=12, ncol=3, loc='upper center')
+        ax.set_title('Free energy paths through membrane, normally distributed barriers, normally distributed jumps', fontsize=14)
+
+        plt.show()
+
+    return min_max_idx == model.permeabilities.argmax()
 
 
 if __name__ == '__main__':
 
-    # from matplotlib import rc 
-
-    # rc('text', usetex=True)
-    # rc('text.latex', preamble=r'\usepackage{color}')
     plt.rcParams['text.usetex'] = True
 
     # Inputs for testing barriers
     T = 300
     multi = True
-    dH_barrier = 4.5
-    dS_barrier = -6/300
-    dH_sigma = 1.5
-    dS_sigma = 2/300
+    dH_barrier = 3.5
+    dS_barrier = -9/300
+    dH_sigma = 3.5/3
+    dS_sigma = 3/300
     n_paths = 2000 # infinite limit
 
     dG_barrier = dH_barrier - T*dS_barrier
 
     # Choose what analyses to run
-    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
@@ -895,9 +963,18 @@ if __name__ == '__main__':
     jump_dist = 'norm'
     jump_params = {'mu' : 10,
                    'sigma' : 2.5}
-    barrier_dist = 'exp'
-    barrier_params = {'beta' : np.array([dH_barrier, dS_barrier])}#,
-                    #   'cov': np.array([[dH_sigma**2, 0],
-                                    #    [0, dS_sigma**2]])}
+    barrier_dist = 'norm'
+    barrier_params = {'mu' : np.array([dH_barrier, dS_barrier]),
+                      'cov': np.array([[dH_sigma**2, 0],
+                                       [0, dS_sigma**2]])}
 
-    # vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
+    vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
+
+
+    # n_iter = 1000
+    # smallest_max_is_most_perm = 0
+    # for i in tqdm(range(n_iter)):
+    #     if vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000, plot=False):
+    #         smallest_max_is_most_perm += 1
+
+    # print(f'The path with the smallest maximum barrier is the most permeable path {smallest_max_is_most_perm/n_iter*100:.2f}% of {n_iter} iterations')
