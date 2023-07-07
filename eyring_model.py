@@ -65,13 +65,13 @@ class EyringModel:
 
     
     def calculate_permeability(self):
-        ''' Calculate overall permeability as a sum of single path permeabilities'''
+        ''' Calculate overall permeability as a mean of single path permeabilities'''
 
         self.permeabilities = np.zeros(self.n_paths)
         for n,p in enumerate(self.paths):
             self.permeabilities[n] = p.calculate_permeability()
 
-        self.permeability = self.permeabilities.sum()
+        self.permeability = self.permeabilities.mean()
         return self.permeability
     
 
@@ -84,7 +84,7 @@ class EyringModel:
         lam = self.get_lambda()
         delta = np.array(self.deltas).mean()
 
-        self.effective_barrier = -R*self.T * np.log(delta / lam**2 * h / kB / self.T * self.permeabilities.sum() * 10**10 / 1000 / 60 / 60)
+        self.effective_barrier = -R*self.T * np.log(delta / lam**2 * h / kB / self.T * self.permeabilities.mean() * 10**10 / 1000 / 60 / 60)
 
         return self.effective_barrier
 

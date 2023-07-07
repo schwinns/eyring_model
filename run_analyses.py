@@ -20,8 +20,8 @@ R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300, multi=True):
 
-    n_paths = 50
-    n_jumps = 50
+    n_paths = 2000
+    n_jumps = 200
     fill = True
 
     print(f'\nCalculating effective barriers and fractions of permeability for {n_paths} paths through the membrane...')
@@ -136,29 +136,32 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # PLOTTING
 
     # plot the effective barrier, max barrier, and mean barrier
-    ax[0].axvline(effective_barrier_equal+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    # ax[0].axvline(effective_barrier_equal+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
     ax[0].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
     ax[0].axvline(dG_barrier, ls='dashed', c='k', gapcolor='red', dashes=[4,4], lw=2)
     ax[0].legend(frameon=False, fontsize=12)
     ax[0].set_ylabel('Density', fontsize=14)
     ax[0].set_title(f'Series of equal barriers, standard deviation = 0 kcal/mol', fontsize=14)
 
-    ax[1].axvline(effective_barrier_norm+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    # ax[1].axvline(effective_barrier_norm+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
     ax[1].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
     ax[1].legend(frameon=False, fontsize=12)
     ax[1].set_ylabel('Density', fontsize=14)
     ax[1].set_title(f'Normally distributed, standard deviation = {std_norm:.0f} kcal/mol', fontsize=14)
 
-    ax[2].axvline(effective_barrier_exp+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    # ax[2].axvline(effective_barrier_exp+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
+    ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
     ax[2].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
     ax[2].legend(frameon=False, fontsize=12)
     ax[2].set_ylabel('Density', fontsize=14)
     ax[2].set_title(f'Exponentially distributed, standard deviation = {std_exp:.0f} kcal/mol', fontsize=14)
 
     ax[2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=14)
-    ax[2].set_xlim(0,)
+    ax[2].set_xlim(0,75)
 
-    plt.suptitle('Membrane barrier distributions for n=50 parallel paths through membrane', fontsize=14)
+    plt.suptitle(f'Membrane barrier distributions for n={n_paths} parallel paths through membrane', fontsize=14)
 
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
 
@@ -820,10 +823,6 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
 
     model = EyringModel(T=T)
 
-    if plot:
-        # fig, ax = plt.subplots(2,1, figsize=(12,12))
-        fig, ax = plt.subplots(1,1, figsize=(12,6))
-
     all_barriers = []
     max_barriers = np.zeros((n_paths,2))
 
@@ -864,13 +863,21 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
     jumps = min_max_path.jump_lengths.cumsum()
     barriers = min_max_path.membrane_barriers
 
+    if min_max_idx == model.permeabilities.argmax():
+        return min_max_idx == model.permeabilities.argmax()
+
     if plot:
+        
+        # fig, ax = plt.subplots(2,1, figsize=(12,12))
+        fig, ax = plt.subplots(1,1, figsize=(12,6))
+
         path_spline = CubicSpline(jumps, barriers, bc_type='natural')
         xs = np.linspace(0, jumps.max(), num=300)
         ys = path_spline(xs)
         ys[0] = ys.mean()
-        # ax[0].plot(xs, ys, c='r', label='smallest maximum barrier path')
         ax.plot(xs, ys, c='r', label='smallest maximum barrier path')
+        # ax.scatter(jumps, barriers, marker='x', s=15, c='r')
+        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='r', fontsize=12)
 
     max_perm_path = model.paths[model.permeabilities.argmax()]
     jumps = max_perm_path.jump_lengths.cumsum()
@@ -881,50 +888,21 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         xs = np.linspace(0, jumps.max(), num=300)
         ys = path_spline(xs)
         ys[0] = ys.mean()
-        # ax[0].plot(xs, ys, c='b', label='maximum permeability path')
         ax.plot(xs, ys, c='b', label='maximum permeability path')
-
-    # print(f'Max permeability index: {model.permeabilities.argmax()}')
+        # ax.scatter(jumps, barriers, marker='x', s=15, c='b')
+        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='b', fontsize=12)
 
     if plot:
 
-        # min_perm_path = model.paths[model.permeabilities.argmin()]
-        # jumps = min_perm_path.jump_lengths.cumsum()
-        # barriers = min_perm_path.membrane_barriers
-
-        # path_spline = CubicSpline(jumps, barriers, bc_type='natural')
-        # xs = np.linspace(0, jumps.max(), num=300)
-        # ys = path_spline(xs)
-        # ys[0] = ys.mean()
-        # ax[0].plot(xs, ys, c='brown', label='minimum permeability path')
-
-        # if barrier_dist not in ['exp','exponential'] and min_max_idx == model.permeabilities.argmax():
-        #     exit()
-
-        # ax[0].scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers')
-        # sns.histplot(all_barriers, binwidth=1, edgecolor='k', ax=ax[1], stat='density')
-        ax.scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers for all paths')
-
-        # ymin, ymax = ax[1].get_ylim()
-        # xmin, xmax = ax[0].get_xlim()
-        # ax[0].axhline(dG_eff, ls='dashed', c='limegreen')
-        # ax[0].text(xmax*0.85, dG_eff-5, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left')
-        # ax[1].axvline(dG_eff, ls='dashed', c='k')
-        # ax[1].text(dG_eff+0.5, ymax*0.9, '$\Delta G_{eff}$ + RT$\ln(n)$')
-
-        # ax[0].set_xlabel('transport coordinate (Angstroms)')
-        # ax[0].set_ylabel('$\Delta G_{m,i,j}$')
-        # ax[1].set_xlabel('$\Delta G_{m,i,j}$')
-        # ax[0].legend()
-
+        # ax.scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers for all paths')
         xmin, xmax = ax.get_xlim()
         ymin, ymax = ax.get_ylim()
         ax.axhline(dG_eff, ls='dashed', c='limegreen')
-        ax.text(xmax*0.85, dG_eff-1, '$\Delta G_{eff}$ + RT$\ln(n)$', c='k', ha='left', fontsize=12)
+        ax.text(xmax*0.85, dG_eff+0.5, '$\Delta G_{eff}^{\ddag}$ + RT$\ln(n)$', ha='left', fontsize=12, c='green')
 
         ax.set_xlabel('transport coordinate (Angstroms)', fontsize=14)
         ax.set_ylabel('$\Delta G_{M,i,j}$', fontsize=14)
-        ax.set_ylim(ymin, ymax+5)
+        ax.set_ylim(ymin, ymax+3)
         ax.legend(frameon=False, fontsize=12, ncol=3, loc='upper center')
         ax.set_title('Free energy paths through membrane, normally distributed barriers, normally distributed jumps', fontsize=14)
 
@@ -949,7 +927,7 @@ if __name__ == '__main__':
     dG_barrier = dH_barrier - T*dS_barrier
 
     # Choose what analyses to run
-    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
@@ -968,7 +946,9 @@ if __name__ == '__main__':
                       'cov': np.array([[dH_sigma**2, 0],
                                        [0, dS_sigma**2]])}
 
-    vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
+    # is_equal = True
+    # while is_equal:
+    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
 
 
     # n_iter = 1000
