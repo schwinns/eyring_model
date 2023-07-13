@@ -928,14 +928,14 @@ if __name__ == '__main__':
 
     # Choose what analyses to run
     parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
-    # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
-    # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
-    # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
-    # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
-    # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-    # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
+    compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
+    show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
+    barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
 
     avg_jumps = 40
     jump_dist = 'norm'
@@ -946,9 +946,9 @@ if __name__ == '__main__':
                       'cov': np.array([[dH_sigma**2, 0],
                                        [0, dS_sigma**2]])}
 
-    # is_equal = True
-    # while is_equal:
-    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
+    is_equal = True
+    while is_equal:
+        is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
 
 
     # n_iter = 1000
