@@ -15,7 +15,7 @@ h = 6.62607 * 10**-34      # Planck (m^2 kg / s)
 global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
-def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist, T=300, multi=True):
+def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist, T=300, multi=True, large_n_paths=5000, method='equal_sums'):
 
     if dist in ['normal', 'N', 'norm']:
         params = {'mu'  : np.array([dH_barrier, dS_barrier]),
@@ -61,8 +61,41 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
                         7500,8000,8500,9000,9500,10_000], dtype='i')
         
         # split up n_paths for each proc
-        ave, res = divmod(n_paths.size, nprocs)
-        count = np.array([ave + 1 if p < res else ave for p in range(nprocs)], dtype='i')
+        if method == 'naive_split':
+            ave, res = divmod(n_paths.size, nprocs)
+            count = np.array([ave + 1 if p < res else ave for p in range(nprocs)], dtype='i')
+
+        elif method == 'large_single_proc':
+            large_array = np.where(n_paths >= large_n_paths)[0] # if number of paths is large, assign to its own processor
+            n_large = len(large_array)
+            rest = np.where(n_paths < large_n_paths)[0]
+            ave, res = divmod(len(rest), nprocs-n_large) # split the rest among the remaining processors
+
+            if n_large > 15:
+                raise ValueError(f'{n_large} paths are considered large. Please choose a larger cutoff value or a different method.')
+            
+            count = np.zeros(nprocs, dtype='i')
+            count[:nprocs-n_large] = np.array([ave+1 if p < res else ave for p in range(nprocs-n_large)], dtype='i')
+            count[nprocs-n_large:] = np.ones(n_large)
+
+        elif method == 'equal_sums':
+            per_proc = n_paths.sum() / nprocs
+            np.random.shuffle(n_paths)
+
+            smaller_arrays = []
+            start = 0
+            end = 0
+
+            for i in range(nprocs):
+                end += np.searchsorted(np.cumsum(n_paths[start:], dtype=float), per_proc)
+                smaller_arrays.append(n_paths[start:end].tolist())
+                start = end
+
+            if start != len(n_paths):
+                for i, n in enumerate(n_paths[start:]):
+                    smaller_arrays[i].append(n)
+            
+            count = np.array([len(small) for small in smaller_arrays], dtype='i')
 
         # save the indices where each processor starts
         displ = np.array([sum(count[:p]) for p in range(nprocs)])
@@ -85,6 +118,7 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
 
     # break the array up and send to processors
     comm.Scatterv([n_paths, count, displ, MPI.INT], my_paths, root=0)
+    print(f'Rank {rank} is tasked with n_paths: {my_paths}, total: {my_paths.sum()}')
 
     # calculate effective barriers and permeabilities on each processor
     effective_barriers = np.zeros(len(my_paths))
@@ -110,23 +144,23 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
 
         if rank == 0:
             # save for average across realizations 
-            avg_barrier += all_barriers + R*T*np.log(n_paths)
-            avg_permeability += all_permeabilities / n_paths
+            avg_barrier += all_barriers
+            avg_permeability += all_permeabilities
 
-            ax1.plot(n_paths, all_barriers + R*T*np.log(n_paths), alpha=0.1, c='k')
-            ax2.plot(n_paths, all_permeabilities / n_paths, alpha=0.1, c='k')
+            ax1.scatter(n_paths, all_barriers, alpha=0.1, c='k')
+            ax2.scatter(n_paths, all_permeabilities, alpha=0.1, c='k')
         
 
     if rank == 0:
         data = np.column_stack((n_paths, avg_barrier/realizations, avg_permeability/realizations))
         np.savetxt(f'avg_convergence_{dist}_{realizations}iter.csv', data, delimiter=',')
-        ax1.plot(n_paths, avg_barrier / realizations, c='r')
-        ax2.plot(n_paths, avg_permeability / realizations, c='r')
+        ax1.scatter(n_paths, avg_barrier / realizations, c='r')
+        ax2.scatter(n_paths, avg_permeability / realizations, c='r')
 
         ax1.set_xlabel('number of paths')
         ax1.set_ylabel('effective barrier')
         ax2.set_xlabel('number of paths')
-        ax2.set_ylabel('permeability per path')
+        ax2.set_ylabel('permeability')
         plt.show()
 
     my_end = timer()
@@ -139,12 +173,10 @@ if __name__ == "__main__":
     iters = 300
     T = 300
     multi = True
-    dH_barrier = 4.5
-    dS_barrier = -6/300
-    dH_sigma = 1.5
-    dS_sigma = 2/300
-
-    dG_barrier = dH_barrier - T*dS_barrier
+    dH_barrier = 3.5
+    dS_barrier = -9/300
+    dH_sigma = 3.5/3
+    dS_sigma = 3/300
 
     # normal distributions
     path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
