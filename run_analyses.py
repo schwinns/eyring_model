@@ -483,7 +483,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     dSm = model.paths[n].entropic_barriers.mean()
     print(f'\nSingle path dH: {dHm}')
     print(f'Single path dS: {dSm} or -T dS at 300 K: {-300*dSm}')
-    print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
+    # print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
 
     avg_dH = dH / n_paths / len(temps)
     avg_dS = dS / n_paths / len(temps)
@@ -570,7 +570,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     dSm = model.paths[n].entropic_barriers.mean()
     print(f'\nSingle path dH: {dHm}')
     print(f'Single path dS: {dSm} or -T dS at 300 K: {-300*dSm}')
-    print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
+    # print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
 
     avg_dH = dH / n_paths / len(temps)
     avg_dS = dS / n_paths / len(temps)
@@ -602,8 +602,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[1,1].axvline(-300*b*R, ls='dashed', c='k', label='$-T\Delta S_{eff}^{\ddag}$', lw=2)
         ax[1,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean', lw=2)
         
-        ax[1,0].set_xlim(0,)
-        ax[1,1].set_xlim(0,)
+        ax[1,0].set_xlim(0,30)
+        ax[1,1].set_xlim(0,80)
 
         ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
         ax[1,1].set_xlabel('$-T \Delta S_{M,i,j}^{\ddag}$', fontsize=14)
@@ -874,7 +874,7 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         path_spline = CubicSpline(jumps, barriers, bc_type='natural')
         xs = np.linspace(0, jumps.max(), num=300)
         ys = path_spline(xs)
-        ys[0] = ys.mean()
+        # ys[0] = ys.mean()
         ax.plot(xs, ys, c='r', label='smallest maximum barrier path')
         # ax.scatter(jumps, barriers, marker='x', s=15, c='r')
         ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='r', fontsize=12)
@@ -887,18 +887,18 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         path_spline = CubicSpline(jumps, barriers, bc_type='natural')
         xs = np.linspace(0, jumps.max(), num=300)
         ys = path_spline(xs)
-        ys[0] = ys.mean()
+        # ys[0] = ys.mean()
         ax.plot(xs, ys, c='b', label='maximum permeability path')
         # ax.scatter(jumps, barriers, marker='x', s=15, c='b')
         ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='b', fontsize=12)
 
     if plot:
 
-        # ax.scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers for all paths')
+        ax.scatter(max_barriers[:,1], max_barriers[:,0], alpha=0.5, c='k', label='maximum barriers for all paths')
         xmin, xmax = ax.get_xlim()
         ymin, ymax = ax.get_ylim()
         ax.axhline(dG_eff, ls='dashed', c='limegreen')
-        ax.text(xmax*0.85, dG_eff+0.5, '$\Delta G_{eff}^{\ddag}$', ha='left', fontsize=12, c='green')
+        ax.text(xmax*0.85, dG_eff-1.25, '$\Delta G_{eff}^{\ddag}$', ha='left', fontsize=12, c='green')
         # ax.text(xmax*0.85, dG_eff+0.5, '$\Delta G_{eff}^{\ddag}$ + RT$\ln(n)$', ha='left', fontsize=12, c='green')
 
         ax.set_xlabel('transport coordinate (Angstroms)', fontsize=14)
