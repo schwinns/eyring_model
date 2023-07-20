@@ -76,15 +76,14 @@ class EyringModel:
     
 
     def calculate_effective_barrier(self):
-        ''' Calculate overall effective barrier from parallel permeabilities'''
+        ''' Calculate overall effective barrier'''
 
-        if self.permeabilities is None:
-            P = self.calculate_permeability()
-
-        lam = self.get_lambda()
+        lam_avg = self.get_lambda()
         delta = np.array(self.deltas).mean()
+        num = (delta / lam_avg**2) * (self.paths[0].lam_sm / self.paths[0].lam_sm)
+        den = np.array([np.sum( np.exp(p.membrane_barriers / (R*self.T)) / p.jump_lengths ) for p in self.paths])
 
-        self.effective_barrier = -R*self.T * np.log(delta / lam**2 * h / kB / self.T * self.permeabilities.mean() * 10**10 / 1000 / 60 / 60)
+        self.effective_barrier = -R*self.T * np.log( 1/self.n_paths * np.sum(num / den)) + self.paths[0].barrier_sm - self.paths[0].barrier_ms
 
         return self.effective_barrier
 
@@ -375,9 +374,10 @@ class Path:
             temp = T
 
         delta = self.jump_lengths.sum()
-        num = (self.lam_sm / self.lam_ms) * np.exp((self.barrier_ms - self.barrier_sm) / (R*temp))
-        den = (self.lam**2 / delta) * np.sum( np.exp(self.membrane_barriers / (R*temp)) / self.jump_lengths)
-        return -np.log(num / den) * R*temp
+        lam_avg = self.jump_lengths.mean()
+        num = (delta / lam_avg**2) * (self.lam_sm / self.lam_ms)
+        den = np.sum( np.exp(self.membrane_barriers / (R*temp)) / self.jump_lengths)
+        return -np.log(num / den) * R*temp + self.barrier_sm - self.barrier_ms
 
 
     def plot_distribution(self, bw=None, hist=False, n_bins=50, binwidth=None, label=None, fill=True, ax=None, color=None):
