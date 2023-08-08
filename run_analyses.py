@@ -302,52 +302,50 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
     dist = 'equal'
     params = params = {'mu'  : np.array([dH_barrier, dS_barrier])}
 
-    lambdas = [1,2,3,4,5,6,7,8,9,10]*3 # list of jump lengths to compare
+    lambdas = [1,2,3,4,5,6,7,8,9,10] # list of jump lengths to compare
+    n_replicates = 10
 
-    print(f'\nComparing permeabilities and effective barriers for distributions of jump lengths with different means and with overall thickness {delta} Angstroms...')
+    fig, ax = plt.subplots(1,1, figsize=(6,6))
+    fig, ax1 = plt.subplots(3,1, figsize=(6,6), sharex=True)
+
+    print(f'\nComparing effective barriers for distributions of jump lengths with mean overall thickness {delta} Angstroms...')
 
     # Jump lengths EQUAL
 
     print(f'\tfor equal dsitribution:')
 
     jump_dist = 'equal'
+    effective_barriers = np.zeros((len(lambdas),2))
+
+    for i,lam in tqdm(enumerate(lambdas)):
+
+        deltas = []
+        lam_barriers = np.zeros(n_replicates)
+        for r in range(n_replicates):
+
+            model = EyringModel(T=T)
+            n_jumps_mu = delta / lam
+            n_jumps_sig = 3
+
+            # add all parallel paths
+            for n in range(n_paths):
+                jump_params = {'mu' : lam}
+                n_jumps = int(np.random.default_rng().normal(loc=n_jumps_mu, scale=n_jumps_sig))
+                model.add_Path(n_jumps=n_jumps, lam=lam)
+                model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+                model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
+
+            [deltas.append(d) for d in model.deltas]
+            lam_barriers[r] = model.calculate_effective_barrier()
     
-    permeabilities = np.zeros(len(lambdas))
-    deltas = np.zeros(len(lambdas))
-    effective_barriers = np.zeros(len(lambdas))
+        effective_barriers[i,0] = lam_barriers.mean()
+        effective_barriers[i,1] = lam_barriers.std()
+        sns.histplot(deltas, edgecolor='black', ax=ax1[0], stat='density', color='tab:gray', alpha=0.75)
 
-    # fig, ax = plt.subplots(10,1, figsize=(8,16), sharex=True)
-        
-    # for i,lam in tqdm(enumerate(lambdas)):
-
-    #     model = EyringModel(T=T)
-    #     n_jumps = int(delta / lam)
-
-    #     all_barriers = []
-    #     # add all parallel paths
-    #     for n in range(n_paths):
-    #         jump_params = {'mu' : lam}
-    #         model.add_Path(n_jumps=n_jumps, lam=lam)
-    #         model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
-    #         model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
-    #         [all_barriers.append(b) for b in model.paths[n].membrane_barriers]
-    
-    #     sns.histplot(all_barriers, edgecolor='black', ax=ax[i % 10,0], stat='density', color='tab:gray', alpha=0.75)
-    #     permeabilities[i] = model.calculate_permeability()
-    #     deltas[i] = np.array(model.deltas).mean()
-    #     effective_barriers[i] = model.calculate_effective_barrier()
-    #     ax[i % 10,0].axvline(effective_barriers[i], ls='dashed', c='r')
-
-    # df1 = pd.DataFrame()
-    # df1['lambda'] = lambdas
-    # df1['permeability'] = permeabilities
-    # df1['thickness'] = deltas
-    # df1['effective_barriers'] = effective_barriers
-    # df1['distribution'] = ['equal']*len(lambdas)
+    ax.plot(lambdas, effective_barriers[:,0], c='tab:gray')
+    ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:gray')
 
     # Jump lengths NORMAL
-
-    fig, ax = plt.subplots(10,1, figsize=(8,16), sharex=True)
 
     print(f'\tfor normal distribution:')
     
@@ -355,83 +353,71 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
 
     for i,lam in tqdm(enumerate(lambdas)):
 
-        model = EyringModel(T=T)
-        n_jumps_mu = delta / lam
-        n_jumps_sig = 3
+        deltas = []
+        lam_barriers = np.zeros(n_replicates)
+        for r in range(n_replicates):
 
-        # add all parallel paths
-        for n in range(n_paths):
-            jump_params = {'mu' : lam, 'sigma' : lam/4}
-            n_jumps = int(np.random.default_rng().normal(loc=n_jumps_mu, scale=n_jumps_sig))
-            model.add_Path(n_jumps=n_jumps, lam=lam)
-            model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
-            model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
+            model = EyringModel(T=T)
+            n_jumps_mu = delta / lam
+            n_jumps_sig = 3
+
+            # add all parallel paths
+            for n in range(n_paths):
+                jump_params = {'mu' : lam, 'sigma' : lam/4}
+                n_jumps = int(np.random.default_rng().normal(loc=n_jumps_mu, scale=n_jumps_sig))
+                model.add_Path(n_jumps=n_jumps, lam=lam)
+                model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+                model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
+
+            [deltas.append(d) for d in model.deltas]
+            lam_barriers[r] = model.calculate_effective_barrier()
     
-        # permeabilities[i] = model.calculate_permeability()
-        # deltas[i] = np.array(model.deltas).mean()
-        # effective_barriers[i] = model.calculate_effective_barrier()
-        sns.histplot(model.deltas, edgecolor='black', ax=ax[i % 10], stat='density', color='tab:blue', alpha=0.75)
-
-    # df2 = pd.DataFrame()
-    # df2['lambda'] = lambdas
-    # df2['permeability'] = permeabilities
-    # df2['thickness'] = deltas
-    # df2['effective_barriers'] = effective_barriers
-    # df2['distribution'] = ['normal']*len(lambdas)
+        effective_barriers[i,0] = lam_barriers.mean()
+        effective_barriers[i,1] = lam_barriers.std()
+        sns.histplot(deltas, edgecolor='black', ax=ax1[1], stat='density', color='tab:blue', alpha=0.75)
+    
+    ax.plot(lambdas, effective_barriers[:,0], c='tab:blue')
+    ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:blue')
 
     # Jump lengths EXPONENTIAL
     
-    # jump_dist = 'exponential'
+    jump_dist = 'exponential'
 
-    # print(f'\tfor exponential distribution:')
+    print(f'\tfor exponential distribution:')
 
-    # for i,lam in tqdm(enumerate(lambdas)):
+    for i,lam in tqdm(enumerate(lambdas)):
 
-    #     model = EyringModel(T=T)
-    #     n_jumps = int(delta / lam)
+        deltas = []
+        lam_barriers = np.zeros(n_replicates)
+        for r in range(n_replicates):
 
-    #     all_barriers = []
-    #     # add all parallel paths
-    #     for n in range(n_paths):
-    #         jump_params = {'beta' : lam}
-    #         model.add_Path(n_jumps=n_jumps, lam=lam)
-    #         model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
-    #         model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
-    #         [all_barriers.append(b) for b in model.paths[n].membrane_barriers]
+            model = EyringModel(T=T)
+            n_jumps_mu = delta / lam
+            n_jumps_sig = 3
+
+            # add all parallel paths
+            for n in range(n_paths):
+                jump_params = {'beta' : lam}
+                n_jumps = int(np.random.default_rng().normal(loc=n_jumps_mu, scale=n_jumps_sig))
+                model.add_Path(n_jumps=n_jumps, lam=lam)
+                model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+                model.paths[n].generate_jump_distribution(dist=jump_dist, dist_params=jump_params)
+
+            [deltas.append(d) for d in model.deltas]
+            lam_barriers[r] = model.calculate_effective_barrier()
     
-    #     sns.histplot(all_barriers, edgecolor='black', ax=ax[i % 10,2], stat='density', color='tab:orange', alpha=0.75)
-    #     permeabilities[i] = model.calculate_permeability()
-    #     deltas[i] = np.array(model.deltas).mean()
-    #     effective_barriers[i] = model.calculate_effective_barrier()
-    #     ax[i % 10,2].axvline(effective_barriers[i], ls='dashed', c='r')
+        effective_barriers[i,0] = lam_barriers.mean()
+        effective_barriers[i,1] = lam_barriers.std()
+        sns.histplot(deltas, edgecolor='black', ax=ax1[2], stat='density', color='tab:orange', alpha=0.75)
+    
+    ax.plot(lambdas, effective_barriers[:,0], c='tab:orange', label='exponential')
+    ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:orange')
+    
+    ax.set_xlabel('$\overline{\lambda} \r{A}$')
+    ax.set_ylabel('$\Delta G_{eff}^{\ddag}$')
 
-    # df3 = pd.DataFrame()
-    # df3['lambda'] = lambdas
-    # df3['permeability'] = permeabilities
-    # df3['thickness'] = deltas
-    # df3['effective_barriers'] = effective_barriers
-    # df3['distribution'] = ['exponential']*len(lambdas)
+    ax1[2].set_xlabel('membrane thickness ($\r{A}$)')
 
-    # sns.lineplot(data=df1, x='lambda', y='permeability', color='tab:blue', label='equal')
-    # sns.lineplot(data=df2, x='lambda', y='permeability', color='tab:orange', label='normal')
-    # sns.lineplot(data=df3, x='lambda', y='permeability', color='tab:green', label='exponential')
-    # plt.xlabel('mean jump length (Angstroms)')
-    # plt.ylabel('permeability ($L/m^2 h$)')
-    # plt.legend()
-
-    # sns.scatterplot(data=df1, x='lambda', y='thickness', color='tab:blue', label='equal')
-    # sns.scatterplot(data=df2, x='lambda', y='thickness', color='tab:orange', label='normal')
-    # sns.scatterplot(data=df3, x='lambda', y='thickness', color='tab:green', label='exponential')
-    # plt.xlabel('mean jump length (Angstroms)')
-    # plt.ylabel('thickness (Angstroms)')
-    # plt.legend()
-
-    # sns.scatterplot(data=df1, x='lambda', y='effective_barriers', color='tab:blue', label='equal')
-    # sns.scatterplot(data=df2, x='lambda', y='effective_barriers', color='tab:orange', label='normal')
-    # sns.scatterplot(data=df3, x='lambda', y='effective_barriers', color='tab:green', label='exponential')
-    # plt.xlabel('mean jump length (Angstroms)')
-    # plt.ylabel('$\Delta G_{eff}$')
-    # plt.legend()
     plt.show()
 
 def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=False):
