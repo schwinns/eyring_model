@@ -15,12 +15,14 @@ R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
 
 class EyringModel:
-    def __init__(self, T=300):
+    def __init__(self, T=300, A=1e7):
         ''' Eyring model for transport through a membrane assuming many parallel paths with separate permeabilities P_i
         
         :param T: temperature (K), default=300
+        :param A: unit area of the membrane (Angstroms^2), default is 0.1 micrometer^2 (corresponding to ~2000 paths), default=1e7
         
         :type T: float
+        :type A: float
         
         '''
 
@@ -28,15 +30,18 @@ class EyringModel:
         self.T = T
         self.permeabilities = None
         self.deltas = []
+        self.area = A
+        self.areas = []
 
 
-    def add_Path(self, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, n_jumps=200, lam=2, barrier_sm=5, barrier_ms=5):
+    def add_Path(self, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, n_jumps=200, lam=2, area=19.635, barrier_sm=5, barrier_ms=5):
         ''' Add path to the Eyring model with a given distribution of membrane barriers
         
         :param dist: distribution from which to draw the membrane barriers, default='normal'
         :param dist_params: parameters for the membrane barrier distribution, default={'mu' : 0, 'sigma': 1}
         :param n_jumps: number of membrane jumps in direction of transport, default=200
         :param lam: average membrane jump length (Angstroms), default=2
+        :param area: cross-sectional area for the path (Angstroms^2), default corresponds to a circular pore with diameter 5 Angstroms, default=19.635
         :param barrier_sm: barrier for the solution-membrane interface, default=5 (becomes 5*R*T)
         :param barrier_ms: barrier for the membrane-solution interface, default=5 (becomes 5*R*T)
 
@@ -44,6 +49,7 @@ class EyringModel:
         :type dist_params: dict
         :type n_jumps: int
         :type lam: float
+        :type area: float
         :type barrier_sm: float
         :type barrier_ms: float
 
@@ -51,6 +57,7 @@ class EyringModel:
     
         p = Path(T=self.T, dist=dist, dist_params=dist_params, # membrane barriers 
                  n_jumps=n_jumps, lam=lam, # jump length distribution
+                 area=area, # cross-sectional area
                  barrier_sm=barrier_sm*R*self.T, barrier_ms=barrier_ms*R*self.T) # interfacial barriers
         
         self.paths.append(p)
@@ -68,10 +75,12 @@ class EyringModel:
         ''' Calculate overall permeability as a mean of single path permeabilities'''
 
         self.permeabilities = np.zeros(self.n_paths)
+        self.areas = np.zeros(self.n_paths)
         for n,p in enumerate(self.paths):
             self.permeabilities[n] = p.calculate_permeability()
+            self.areas[n] = p.area
 
-        self.permeability = self.permeabilities.mean()
+        self.permeability = np.sum(self.permeabilities*self.areas) / self.area # units work as long as EyringModel area and Path area are same units
         return self.permeability
     
 
@@ -80,16 +89,16 @@ class EyringModel:
 
         lam_avg = self.get_lambda()
         delta = np.array(self.deltas).mean()
-        num = (delta / lam_avg**2) * (self.paths[0].lam_sm / self.paths[0].lam_sm)
-        den = np.array([np.sum( np.exp(p.membrane_barriers / (R*self.T)) / p.jump_lengths ) for p in self.paths])
+        num = (delta / lam_avg**2) * (self.paths[0].lam_sm / self.paths[0].lam_sm) #* np.array([p.area/self.area for p in self.paths])
+        den = np.array([self.area / p.area * np.sum( np.exp(p.membrane_barriers / (R*self.T)) / p.jump_lengths ) for p in self.paths])
 
-        self.effective_barrier = -R*self.T * np.log( 1/self.n_paths * np.sum(num / den)) + self.paths[0].barrier_sm - self.paths[0].barrier_ms
+        self.effective_barrier = -R*self.T * np.log(np.sum(num / den)) + self.paths[0].barrier_sm - self.paths[0].barrier_ms
 
         return self.effective_barrier
 
 
 class Path:
-    def __init__(self, T=300, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, n_jumps=200, lam=2, barrier_sm=5, barrier_ms=5):
+    def __init__(self, T=300, dist='normal', dist_params={'mu': 0, 'sigma' : 1}, n_jumps=200, lam=2, area=19.635, barrier_sm=5, barrier_ms=5):
         ''' Single path of the Eyring model for transport through a membrane as a series of molecular jumps (see original citation: https://doi.org/10.1021/j150474a012)
 
         :param T: temperature (K), default=300
@@ -97,6 +106,7 @@ class Path:
         :param dist_params: parameters for the membrane barrier distribution, default={'mu' : 0, 'sigma': 1}
         :param n_jumps: number of membrane jumps in direction of transport, default=200
         :param lam: average membrane jump length (Angstroms), default=2
+        :param area: cross-sectional area for the path (Angstroms^2), default corresponds to a circular pore with diameter 5 Angstroms, default=19.635
         :param barrier_sm: barrier for the solution-membrane interface, default=5
         :param barrier_ms: barrier for the membrane-solution interface, default=5
 
@@ -105,6 +115,7 @@ class Path:
         :type dist_params: dict
         :type n_jumps: int
         :type lam: float
+        :type area: float
         :type barrier_sm: float
         :type barrier_ms: float
 
@@ -114,6 +125,7 @@ class Path:
         self.T = T
         self.n_jumps = n_jumps
         self.lam = lam
+        self.area = area
 
         # Set some initial values
         self.seed = None

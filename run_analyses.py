@@ -22,7 +22,6 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
 
     n_paths = 2000
     n_jumps = 200
-    fill = True
 
     print(f'\nCalculating effective barriers and fractions of permeability for {n_paths} paths through the membrane...')
 
@@ -138,7 +137,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # ax[0].axvline(effective_barrier_equal+R*T*np.log(n_paths), ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag} + RT\ln(n)$', lw=2)
     ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
     ax[0].axvline(dG_barrier, ls='dashed', c='r', label='mean', lw=2)
-    ax[0].axvline(dG_barrier, ls='dashed', c='k', gapcolor='red', dashes=[4,4], lw=2)
+    # ax[0].axvline(dG_barrier, ls='dashed', c='k', gapcolor='red', dashes=[4,4], lw=2)
     ax[0].legend(frameon=False, fontsize=12)
     ax[0].set_ylabel('Density', fontsize=14)
     ax[0].set_title(f'Series of equal barriers, standard deviation = 0 kcal/mol', fontsize=14)
@@ -342,8 +341,9 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
         effective_barriers[i,1] = lam_barriers.std()
         sns.histplot(deltas, edgecolor='black', ax=ax1[0], stat='density', color='tab:gray', alpha=0.75)
 
-    ax.plot(lambdas, effective_barriers[:,0], c='tab:gray')
+    ax.plot(lambdas, effective_barriers[:,0], c='tab:gray', label='equal')
     ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:gray')
+    print(f'Effective barrier changes from {effective_barriers[0,0]:.4f} +/- {effective_barriers[0,1]:.4f} to {effective_barriers[-1,0]:.4f} +/- {effective_barriers[-1,1]:.4f} as mean jump length increases from {lambdas[0]} to {lambdas[-1]}')
 
     # Jump lengths NORMAL
 
@@ -376,8 +376,9 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
         effective_barriers[i,1] = lam_barriers.std()
         sns.histplot(deltas, edgecolor='black', ax=ax1[1], stat='density', color='tab:blue', alpha=0.75)
     
-    ax.plot(lambdas, effective_barriers[:,0], c='tab:blue')
+    ax.plot(lambdas, effective_barriers[:,0], c='tab:blue', label='normal')
     ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:blue')
+    print(f'Effective barrier changes from {effective_barriers[0,0]:.4f} +/- {effective_barriers[0,1]:.4f} to {effective_barriers[-1,0]:.4f} +/- {effective_barriers[-1,1]:.4f} as mean jump length increases from {lambdas[0]} to {lambdas[-1]}')
 
     # Jump lengths EXPONENTIAL
     
@@ -412,9 +413,11 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
     
     ax.plot(lambdas, effective_barriers[:,0], c='tab:orange', label='exponential')
     ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:orange')
+    print(f'Effective barrier changes from {effective_barriers[0,0]:.4f} +/- {effective_barriers[0,1]:.4f} to {effective_barriers[-1,0]:.4f} +/- {effective_barriers[-1,1]:.4f} as mean jump length increases from {lambdas[0]} to {lambdas[-1]}')
     
     ax.set_xlabel('$\overline{\lambda} \r{A}$')
     ax.set_ylabel('$\Delta G_{eff}^{\ddag}$')
+    ax.legend()
 
     ax1[2].set_xlabel('membrane thickness ($\r{A}$)')
 
@@ -651,16 +654,16 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
         max_barriers[n] = model.paths[n].membrane_barriers.max()
 
     effective_barrier = model.calculate_effective_barrier()
-    # shifted_effective_barrier = effective_barrier + R*T*np.log(n_paths)
+    shifted_effective_barrier = effective_barrier + R*T*np.log(n_paths*model.paths[0].area / model.area)
 
     paths = np.arange(1, n_paths+1)
     ax[0].scatter(paths, max_barriers, edgecolors='k')
     ax[0].axhline(effective_barrier, ls='dashed', c='k')
-    # ax[0].axhline(shifted_effective_barrier, ls='dashed', c='r')
+    ax[0].axhline(shifted_effective_barrier, ls='dashed', c='r')
     xmin, xmax = ax[0].get_xlim()
     ymin, ymax = ax[0].get_ylim()
     ax[0].text(xmax*0.75, effective_barrier-0.75, '$\Delta G_{eff}^{\ddag}$', fontsize=12)
-    # ax[0].text(xmax*0.75, shifted_effective_barrier-0.75, '$\Delta G_{eff}^{\ddag} + RT \ln(n)$', c='r', fontsize=12)
+    ax[0].text(xmax*0.75, shifted_effective_barrier-0.75, '$\Delta G_{eff}^{\ddag} + RT \ln(\sum_i A_i / A)$', c='r', fontsize=12)
     ax[0].set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=14)
     ax[0].set_ylim(ymin-1, ymax)
     ax[0].set_title('Maximum barriers for each path, normally distributed', fontsize=14)
@@ -921,39 +924,41 @@ if __name__ == '__main__':
     dS_barrier = -9/300
     dH_sigma = 3.5/3
     dS_sigma = 3/300
-    n_paths = 2000 # infinite limit
+    n_paths = 2000 # infinite limit, approximately corresponds to unit area = 0.1 um^2
 
     dG_barrier = dH_barrier - T*dS_barrier
 
     # Choose what analyses to run
-    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
-    compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
+    # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
-    # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-    # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
+    # barrier_variance(dH_barrier, d
+    # 
+    # S_barrier, n_paths=n_paths, T=T)
 
-    # avg_jumps = 40
-    # jump_dist = 'norm'
-    # jump_params = {'mu' : 10,
-    #                'sigma' : 2.5}
-    # barrier_dist = 'norm'
-    # barrier_params = {'mu' : np.array([dH_barrier, dS_barrier]),
-    #                   'cov': np.array([[dH_sigma**2, 0],
-    #                                    [0, dS_sigma**2]])}
+    avg_jumps = 40
+    jump_dist = 'norm'
+    jump_params = {'mu' : 10,
+                   'sigma' : 2.5}
+    barrier_dist = 'norm'
+    barrier_params = {'mu' : np.array([dH_barrier, dS_barrier]),
+                      'cov': np.array([[dH_sigma**2, 0],
+                                       [0, dS_sigma**2]])}
 
-    # is_equal = True
-    # while is_equal:
-    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000)
+    is_equal = True
+    while is_equal:
+        is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
 
     # n_iter = 1000
     # smallest_max_is_most_perm = 0
     # for i in tqdm(range(n_iter)):
-    #     if vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000, plot=False):
-    #         smallest_max_is_most_perm += 1
+        # if vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000, plot=False):
+            # smallest_max_is_most_perm += 1
 
     # print(f'The path with the smallest maximum barrier is the most permeable path {smallest_max_is_most_perm/n_iter*100:.2f}% of {n_iter} iterations')
