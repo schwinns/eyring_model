@@ -515,8 +515,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[0,0].set_ylabel('Density', fontsize=14)
         ax[0,1].set_ylabel(None)
 
-        ax[0,0].set_xlim(0,)
-        ax[0,1].set_xlim(0,)
+        # ax[0,0].set_xlim(0,)
+        # ax[0,1].set_xlim(0,)
 
         ax[0,0].legend(fontsize=12, frameon=False, ncol=1)
         ax[0,1].legend(fontsize=12, frameon=False, ncol=1)
@@ -604,7 +604,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[1,1].axvline(-300*avg_dS, ls='dashed', c='red', label='mean', lw=2)
         
         ax[1,0].set_xlim(0,30)
-        ax[1,1].set_xlim(0,80)
+        ax[1,1].set_xlim(0,60)
 
         ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
         ax[1,1].set_xlabel('$-T \Delta S_{M,i,j}^{\ddag}$', fontsize=14)
@@ -934,7 +934,7 @@ if __name__ == '__main__':
     # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
