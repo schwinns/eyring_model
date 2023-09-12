@@ -440,7 +440,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
 
     # MULTIVARIATE NORMAL
 
-    print('\tfor normal distributions:')
+    print('\nNORMALLY DISTRIBUTED:')
 
     params = {
         'mu'  : np.array([dH_barrier, dS_barrier]),
@@ -480,11 +480,11 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         X[i] = 1 / T
         Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
 
-    dHm = model.paths[n].enthalpic_barriers.mean()
-    dSm = model.paths[n].entropic_barriers.mean()
+    dHm = np.mean(all_dH[300])
+    dSm = np.mean(all_dS[300])
     print(f'\nSingle path dH: {dHm}')
     print(f'Single path dS: {dSm} or -T dS at 300 K: {-300*dSm}')
-    # print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
+    print(f'Many path contribution R ln(sum(A_i/A)): {R*np.log(n_paths * model.paths[0].area / model.area)} or -RT ln(sum(A_i/A)) at 300 K: {-R*300*np.log(n_paths*model.paths[0].area / model.area)}')
 
     avg_dH = dH / n_paths / len(temps)
     avg_dS = dS / n_paths / len(temps)
@@ -531,7 +531,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
 
     # MULTIPLE EXPONENTIALS
 
-    print('\tfor exponential distributions:')
+    print('\nEXPONENTIALLY DISTRIBUTED:')
 
     params = {'beta'  : np.array([dH_barrier, dS_barrier])}
 
@@ -571,7 +571,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     dSm = model.paths[n].entropic_barriers.mean()
     print(f'\nSingle path dH: {dHm}')
     print(f'Single path dS: {dSm} or -T dS at 300 K: {-300*dSm}')
-    # print(f'Many path contribution R ln(n): {R*np.log(n_paths)} or -RT ln(n) at 300 K: {-R*300*np.log(n_paths)}')
+    print(f'Many path contribution R ln(sum(A_i/A)): {R*np.log(n_paths * model.paths[0].area / model.area)} or -RT ln(sum(A_i/A)) at 300 K: {-R*300*np.log(n_paths*model.paths[0].area / model.area)}')
 
     avg_dH = dH / n_paths / len(temps)
     avg_dS = dS / n_paths / len(temps)
@@ -934,7 +934,7 @@ if __name__ == '__main__':
     # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths)
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=50, plot=True)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
@@ -948,9 +948,9 @@ if __name__ == '__main__':
                       'cov': np.array([[dH_sigma**2, 0],
                                        [0, dS_sigma**2]])}
 
-    is_equal = True
-    while is_equal:
-        is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
+    # is_equal = True
+    # while is_equal:
+    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
 
     # n_iter = 1000
