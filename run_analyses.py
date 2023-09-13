@@ -955,7 +955,7 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         # ax.axhline(dG_eff, ls='dashed', c='limegreen')
         ax.axhline(shifted_dG_eff, ls='dashed', c='black')
         # ax.text(xmax*0.85, dG_eff-1.25, '$\Delta G_{eff}^{\ddag}$', ha='left', fontsize=12, c='green')
-        ax.text(xmax*0.55, shifted_dG_eff+0.5, '$\Delta G_{eff}^{\ddag} + RT \ln(\sum_i^n A_i / A)$', ha='left', fontsize=12, c='green')
+        ax.text(xmax*0.55, shifted_dG_eff+0.5, '$\Delta G_{eff}^{\ddag} + RT \ln(\sum_i^n A_i / A)$', ha='left', fontsize=12, c='black')
 
         ax.set_xlabel('transport coordinate (Angstroms)', fontsize=14)
         ax.set_ylabel('$\Delta G_{M,i,j}$', fontsize=14)
@@ -1014,12 +1014,12 @@ if __name__ == '__main__':
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
 
     # Figure 8
-    # is_equal = True
-    # while is_equal:
-    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
+    is_equal = True
+    while is_equal:
+        is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
     # Figure 9
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
+    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
     
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
