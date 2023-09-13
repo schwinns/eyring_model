@@ -49,6 +49,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     permeability = model_equal.calculate_permeability()
     effective_barrier_equal = model_equal.calculate_effective_barrier()
     std_equal = np.std(all_barriers)
+    mean_equal = np.mean(all_barriers)
 
     # save data as pandas DataFrame
     df_equal = pd.DataFrame()
@@ -88,6 +89,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     permeability = model_norm.calculate_permeability()
     effective_barrier_norm = model_norm.calculate_effective_barrier()
     std_norm = np.std(all_barriers)
+    mean_norm = np.mean(all_barriers)
 
     # save data as pandas DataFrame
     df_norm = pd.DataFrame()
@@ -125,6 +127,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     permeability = model_exp.calculate_permeability()
     effective_barrier_exp = model_exp.calculate_effective_barrier()
     std_exp = np.std(all_barriers)
+    mean_exp = np.mean(all_barriers)
 
     # save data as pandas DataFrame
     df_exp = pd.DataFrame()
@@ -171,6 +174,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # plt.suptitle(f'Membrane barrier distributions for n={n_paths} parallel paths through membrane', fontsize=14)
     plt.savefig('figs/hist_effective_individual_barriers_no_penalty.png')
 
+    print(f'Means: {mean_equal} (equal), {mean_norm} (normal), {mean_exp} (exponential)')
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
 
     # fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
@@ -425,10 +429,11 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
     ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:orange')
     print(f'Effective barrier changes from {effective_barriers[0,0]:.4f} +/- {effective_barriers[0,1]:.4f} to {effective_barriers[-1,0]:.4f} +/- {effective_barriers[-1,1]:.4f} as mean jump length increases from {lambdas[0]} to {lambdas[-1]}')
     
-    ax.set_xlabel('mean jumpth length (Angstroms)')
-    ax.set_ylabel('$\Delta G_{eff}^{\ddag}$')
+    ax.set_xlabel('mean jumpth length (Angstroms)', fontsize=14)
+    ax.set_ylabel('$\Delta G_{eff}^{\ddag}$', fontsize=14)
     ax.set_xticks(np.arange(11))
-    ax.legend()
+    ax.set_xlim(0,10)
+    ax.legend(fontsize=14)
 
     # ax1[2].set_xlabel('membrane thickness ($\r{A}$)')
 
@@ -973,7 +978,7 @@ if __name__ == '__main__':
 
     plt.rcParams['text.usetex'] = True
 
-    # Inputs for testing barriers
+    # Inputs
     T = 300
     multi = True
     dH_barrier = 3.5
@@ -1008,15 +1013,15 @@ if __name__ == '__main__':
     # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     
     # Figure 6
-    # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
+    compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     
     # Data for Figure 7
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
 
     # Figure 8
-    is_equal = True
-    while is_equal:
-        is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
+    # is_equal = True
+    # while is_equal:
+    #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
     # Figure 9
     # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
