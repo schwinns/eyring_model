@@ -7,6 +7,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 from scipy.interpolate import CubicSpline
+import statsmodels.api as sm
 
 from eyring_model import EyringModel, Path
 
@@ -460,6 +461,9 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     pore_dH = np.zeros(n_paths*len(temps))
     pore_dS = np.zeros(n_paths*len(temps))
 
+    hist_alpha = 0.5
+    error_alpha = 0.1
+
     fig, ax = plt.subplots(2,3, figsize=(18,10), sharex=False)
 
     # MULTIVARIATE NORMAL
@@ -473,10 +477,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     }
 
     dist = 'normal'
-
-    # dH = 0
-    # dS = 0
-    # dG = 0
 
     all_dH = []
     all_dS = []
@@ -504,9 +504,9 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         X[i] = 1 / T
         Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
 
-    sns.histplot(all_dH, binwidth=1, edgecolor='k', ax=ax[0,0], stat='density', alpha=0.5, color='tab:blue')
-    sns.histplot(all_dS, binwidth=0.01, edgecolor='k', ax=ax[0,1], stat='density', alpha=0.5, color='tab:blue')
-    sns.histplot(all_dG, binwidth=1, edgecolor='k', ax=ax[0,2], stat='density', alpha=0.5, color='tab:blue')
+    sns.histplot(all_dH, edgecolor='k', ax=ax[0,0], stat='probability', alpha=hist_alpha, color='tab:blue')
+    sns.histplot(all_dS, edgecolor='k', ax=ax[0,1], stat='probability', alpha=hist_alpha, color='tab:blue')
+    sns.histplot(all_dG, edgecolor='k', ax=ax[0,2], stat='probability', alpha=hist_alpha, color='tab:blue')
 
     dHm = model.paths[n].enthalpic_barriers.mean()
     dSm = model.paths[n].entropic_barriers.mean()
@@ -516,21 +516,31 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     print(f'Single path dG: {dGm}')
     print(f'Many path contribution R ln(sum(A_i/A)): {R*np.log(np.sum(model.areas) / model.area)} or -RT ln(sum(A_i/A)) at 300 K: {-R*300*np.log(np.sum(model.areas) / model.area)}')
 
-    # avg_dH = dH / n_paths / len(temps)
-    # avg_dS = dS / n_paths / len(temps)
-    # avg_dG = dG / n_paths / len(temps)
     avg_dH = np.mean(all_dH)
     avg_dS = np.mean(all_dS)
     avg_dG = np.mean(all_dG)
-    print(f'\nAverage dH: {avg_dH}')
-    print(f'Average dS: {avg_dS}')
-    print(f'Average dG: {avg_dG}')
+    sem_dH = np.std(all_dH) / np.sqrt(np.size(all_dH))
+    sem_dS = np.std(all_dS) / np.sqrt(np.size(all_dS))
+    sem_dG = np.std(all_dG) / np.sqrt(np.size(all_dG))
+    print(f'\nAverage dH: {avg_dH} +/- {sem_dH}')
+    print(f'Average dS: {avg_dS} +/- {sem_dS}')
+    print(f'Average dG: {avg_dG} +/- {sem_dG}')
 
-    A = np.vstack([X, np.ones(len(X))]).T
-    m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
-    print(f'\ndH_eff : {-m*R}')
-    print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
-    print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {-m*R - 300*b*R}')
+    # A = np.vstack([X, np.ones(len(X))]).T
+    # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
+    A = sm.add_constant(X)
+    model = sm.OLS(Y, A)
+    results = model.fit()
+    b, m = results.params
+    be, me = results.bse
+
+    eff_dH = np.array([-m*R, me*R]) # estimate, error
+    eff_dS = np.array([b*R, be*R])
+    eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+
+    print(f'\ndH_eff : {eff_dH[0]} +/- {eff_dH[1]}')
+    print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
+    print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {eff_dG[0]} +/- {eff_dG[1]}')
 
     if plot:
         # plot effective, single path, mean barriers
@@ -538,19 +548,21 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[0,1].set_title('Normally distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=14)
         ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from normal $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$')
 
-        ax[0,0].axvline(-m*R, ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[0,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[0,0].axvspan(eff_dH[0] - eff_dH[1], eff_dH[0] + eff_dH[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
-        # ax[0,0].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
-
-        ax[0,1].axvline(b*R, ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[0,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
+        
+        ax[0,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[0,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[0,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=2)
-        # ax[0,1].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[0,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        ax[0,2].axvline(-m*R-300*b*R, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[0,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[0,2].axvspan(eff_dG[0] - eff_dG[1], eff_dG[0] + eff_dG[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[0,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=2)
+        ax[0,2].axvspan(avg_dG - sem_dG, avg_dG + sem_dG, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        # ax[0,0].set_xlabel('$\Delta H_{M,j}^{\ddag}$', fontsize=14)
-        # ax[0,1].set_xlabel('$-T \Delta S_{M,j}^{\ddag}$', fontsize=14)
         ax[0,0].set_ylabel('Density', fontsize=14)
         ax[0,1].set_ylabel(None)
         ax[0,2].set_ylabel(None)
@@ -580,10 +592,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
 
     dist = 'exponential'
 
-    # dH = 0
-    # dS = 0
-    # dG = 0
-
     all_dH = []
     all_dS = []
     all_dG = []
@@ -593,9 +601,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         for n in range(n_paths):
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
-            # dH += model.paths[n].enthalpic_barriers.mean()
-            # dS += model.paths[n].entropic_barriers.mean()
-            # dG += model.paths[n].membrane_barriers.mean()
             if plot:
                 [all_dH.append(b) for b in model.paths[n].enthalpic_barriers]
                 [all_dS.append(b) for b in model.paths[n].entropic_barriers]
@@ -609,9 +614,9 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         X[i] = 1 / T
         Y[i] = np.log(P[i]*h*delta / (kB*T*lam**2))
 
-    sns.histplot(all_dH, binwidth=1, edgecolor='k', ax=ax[1,0], stat='density', alpha=0.5, color='tab:orange')
-    sns.histplot(all_dS, binwidth=0.01, edgecolor='k', ax=ax[1,1], stat='density', alpha=0.5, color='tab:orange')
-    sns.histplot(all_dG, binwidth=1, edgecolor='k', ax=ax[1,2], stat='density', alpha=0.5, color='tab:orange')
+    sns.histplot(all_dH, edgecolor='k', ax=ax[1,0], stat='probability', alpha=hist_alpha, color='tab:orange')
+    sns.histplot(all_dS, edgecolor='k', ax=ax[1,1], stat='probability', alpha=hist_alpha, color='tab:orange')
+    sns.histplot(all_dG, edgecolor='k', ax=ax[1,2], stat='probability', alpha=hist_alpha, color='tab:orange')
 
     dHm = model.paths[n].enthalpic_barriers.mean()
     dSm = model.paths[n].entropic_barriers.mean()
@@ -621,21 +626,31 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     print(f'Single path dG: {dGm}')
     print(f'Many path contribution R ln(sum(A_i/A)): {R*np.log(np.sum(model.areas) / model.area)} or -RT ln(sum(A_i/A)) at 300 K: {-R*300*np.log(np.sum(model.areas) / model.area)}')
 
-    # avg_dH = dH / n_paths / len(temps)
-    # avg_dS = dS / n_paths / len(temps)
-    # avg_dG = dG / n_paths / len(temps)
     avg_dH = np.mean(all_dH)
     avg_dS = np.mean(all_dS)
     avg_dG = np.mean(all_dG)
-    print(f'\nAverage dH: {avg_dH}')
-    print(f'Average dS: {avg_dS}')
-    print(f'Average dG: {avg_dG}')
+    sem_dH = np.std(all_dH) / np.sqrt(np.size(all_dH))
+    sem_dS = np.std(all_dS) / np.sqrt(np.size(all_dS))
+    sem_dG = np.std(all_dG) / np.sqrt(np.size(all_dG))
+    print(f'\nAverage dH: {avg_dH} +/- {sem_dH}')
+    print(f'Average dS: {avg_dS} +/- {sem_dS}')
+    print(f'Average dG: {avg_dG} +/- {sem_dG}')
 
-    A = np.vstack([X, np.ones(len(X))]).T
-    m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
-    print(f'\ndH_eff : {-m*R}')
-    print(f'dS_eff : {b*R} or -T dS_eff at 300 K: {-300*b*R}')
-    print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {-m*R - 300*b*R}')
+    # A = np.vstack([X, np.ones(len(X))]).T
+    # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
+    A = sm.add_constant(X)
+    model = sm.OLS(Y, A)
+    results = model.fit()
+    b, m = results.params
+    be, me = results.bse
+    
+    eff_dH = np.array([-m*R, me*R]) # estimate, error
+    eff_dS = np.array([b*R, be*R])
+    eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+
+    print(f'\ndH_eff : {eff_dH[0]} +/- {eff_dH[1]}')
+    print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
+    print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {eff_dG[0]} +/- {eff_dG[1]}')
 
     df2 = pd.DataFrame()
     df2['distribution'] = ['multiple exponentials']*len(temps)
@@ -651,23 +666,28 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[1,1].set_title('Exponentially distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=14)
         ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from exponential $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$')
 
-        ax[1,0].axvline(-m*R, ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[1,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[1,0].axvspan(eff_dH[0] - eff_dH[1], eff_dH[0] + eff_dH[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
+        ax[1,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
         
-        ax[1,1].axvline(b*R, ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[1,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[1,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[1,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=2)
-        # ax[1,1].axvline(dG_eff.mean(), ls='dashed', c='k', label='$\Delta G_{eff}$')
+        ax[1,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        ax[1,2].axvline(-m*R-300*b*R, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[1,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[1,2].axvspan(eff_dG[0] - eff_dG[1], eff_dG[0] + eff_dG[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[1,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=2)
-        
+        ax[1,2].axvspan(avg_dG - sem_dG, avg_dG + sem_dG, facecolor='red', edgecolor=None, alpha=error_alpha)
+
         ax[1,0].set_xlim(0,25)
         ax[1,1].set_xlim(-0.2,0)
         ax[1,2].set_xlim(0,60)
 
-        ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
-        ax[1,1].set_xlabel('$\Delta S_{M,i,j}^{\ddag}$', fontsize=14)
-        ax[1,2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$', fontsize=14)
+        ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=14)
+        ax[1,1].set_xlabel('$\Delta S_{M,i,j}^{\ddag}$ (kcal/mol/K)', fontsize=14)
+        ax[1,2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=14)
         ax[1,0].set_ylabel('Density', fontsize=14)
         ax[1,1].set_ylabel(None)
         ax[1,2].set_ylabel(None)
@@ -675,17 +695,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
         ax[1,0].legend(fontsize=12, frameon=False, ncol=1)
         ax[1,1].legend(fontsize=12, frameon=False, ncol=1)
         ax[1,2].legend(fontsize=12, frameon=False, ncol=1)
-
-    # df = pd.concat((df1,df2))
-
-    # sns.lmplot(data=df, x='1/T', y='ln(P h del / kB T lam^2)', hue='distribution', 
-    #            scatter_kws={'alpha':0.75, 'edgecolor':'black'})
-
-    # plt.figure()
-    # sns.scatterplot(data=df, x='temperature', y='permeability', hue='distribution')
-
-    # sns.lmplot(data=df, x='temperature', y='effective free energy', hue='distribution',
-    #            scatter_kws={'alpha':0.75, 'edgecolor':'black'})
 
     plt.savefig('figs/dH_dS_distributions.png')
     plt.show()
@@ -1019,19 +1028,19 @@ if __name__ == '__main__':
     # Figure 5
     # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     
-    # Figure 6
+    # Figure S1
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
     
-    # Data for Figure 7
+    # Data for Figure 6
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
 
-    # Figure 8
+    # Figure 7
     # is_equal = True
     # while is_equal:
     #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
-    # Figure 9
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
+    # Figure 8
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
     
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
