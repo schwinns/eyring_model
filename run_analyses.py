@@ -444,7 +444,7 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
     plt.savefig('figs/jump_length_effects.png')
     plt.show()
 
-def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=False):
+def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7, plot=False):
 
     print(f'\nEstimating the effective enthalpic and entropic barriers...')
 
@@ -485,7 +485,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     j = 0
 
     for i, T in tqdm(enumerate(temps)):
-        model = EyringModel(T=T)
+        model = EyringModel(T=T, A=area)
         for n in range(n_paths):
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
@@ -529,8 +529,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     # A = np.vstack([X, np.ones(len(X))]).T
     # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
     A = sm.add_constant(X)
-    model = sm.OLS(Y, A)
-    results = model.fit()
+    ols = sm.OLS(Y, A)
+    results = ols.fit()
     b, m = results.params
     be, me = results.bse
 
@@ -597,7 +597,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     all_dG = []
 
     for i, T in tqdm(enumerate(temps)):
-        model = EyringModel(T=T)
+        model = EyringModel(T=T, A=area)
         for n in range(n_paths):
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
@@ -639,8 +639,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, plot=Fal
     # A = np.vstack([X, np.ones(len(X))]).T
     # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
     A = sm.add_constant(X)
-    model = sm.OLS(Y, A)
-    results = model.fit()
+    ols = sm.OLS(Y, A)
+    results = ols.fit()
     b, m = results.params
     be, me = results.bse
     
@@ -1040,7 +1040,7 @@ if __name__ == '__main__':
     #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
     # Figure 8
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=n_paths, plot=True)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
     
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
