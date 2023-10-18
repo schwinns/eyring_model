@@ -457,10 +457,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     X = np.zeros(len(temps))
     Y = np.zeros(len(temps))
 
-    pore_dG = np.zeros(n_paths)
-    pore_dH = np.zeros(n_paths*len(temps))
-    pore_dS = np.zeros(n_paths*len(temps))
-
     hist_alpha = 0.5
     error_alpha = 0.1
 
@@ -482,8 +478,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     all_dS = []
     all_dG = []
 
-    j = 0
-
     for i, T in tqdm(enumerate(temps)):
         model = EyringModel(T=T, A=area)
         for n in range(n_paths):
@@ -494,8 +488,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
                 [all_dS.append(b) for b in model.paths[n].entropic_barriers]
                 if T == 300:
                     [all_dG.append(b) for b in model.paths[n].membrane_barriers]
-                    pore_dG[j] = model.paths[n].calculate_effective_barrier()
-                    j += 1
 
         P[i] = model.calculate_permeability() / 60 / 60 / 1000 * 10**9 * 10
         dG_eff[i] = model.calculate_effective_barrier()
@@ -542,6 +534,18 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
     print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {eff_dG[0]} +/- {eff_dG[1]}')
 
+    A = sm.add_constant(X)
+    ols = sm.OLS(np.log(P), A)
+    results = ols.fit()
+    b, m = results.params
+    be, me = results.bse
+    print(f'\nArrhenius barrier to permeability: {-m*R} kcal/mol')
+    print(f'Arrhenius barrier calculated from enthalpic barrier: {eff_dH[0]} kcal/mol')
+    print(f'Arrhenius prefactor: {np.exp(b)} A/s')
+    print(f'Arrhenius prefactor calculated from entropic barrier: {lam**2/delta * kB*300/h * np.exp(eff_dS[0]/R)} A/s')
+
+    res = np.hstack((eff_dH, eff_dS, eff_dG))
+
     if plot:
         # plot effective, single path, mean barriers
         ax[0,0].set_title('Normally distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
@@ -582,7 +586,10 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     df1['permeability'] = P
     df1['effective free energy'] = dG_eff
     df1['1/T'] = X
-    df1['ln(P h del / kB T lam^2)'] = Y
+    df1['ln(P/T)'] = Y
+
+    fig1, ax1 = plt.subplots(1,1, figsize=(8,8))
+    ax1 = sns.regplot(x='1/T', y='ln(P/T)', data=df1, ax=ax1)
 
     # MULTIPLE EXPONENTIALS
 
@@ -608,7 +615,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
                     [all_dG.append(b) for b in model.paths[n].membrane_barriers]
 
         dG_eff[i] = model.calculate_effective_barrier()
-        P[i] = model.calculate_permeability()
+        P[i] = model.calculate_permeability() / 60 / 60 / 1000 * 10**9 * 10
         lam = model.get_lambda()
         delta = np.array(model.deltas).mean()
         X[i] = 1 / T
@@ -652,13 +659,26 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
     print(f'dG_eff at 300 K from averaged effective barriers: {dG_eff.mean()} or from dH_eff and dS_eff: {eff_dG[0]} +/- {eff_dG[1]}')
 
+    A = sm.add_constant(X)
+    ols = sm.OLS(np.log(P), A)
+    results = ols.fit()
+    b, m = results.params
+    be, me = results.bse
+    print(f'\nArrhenius barrier to permeability: {-m*R} kcal/mol')
+    print(f'Arrhenius barrier calculated from enthalpic barrier: {eff_dH[0]} kcal/mol')
+    print(f'Arrhenius prefactor: {np.exp(b)} A/s')
+    print(f'Arrhenius prefactor calculated from entropic barrier: {lam**2/delta * kB*300/h * np.exp(eff_dS[0]/R)} A/s')
+
     df2 = pd.DataFrame()
     df2['distribution'] = ['multiple exponentials']*len(temps)
     df2['temperature'] = temps
     df2['permeability'] = P
     df2['effective free energy'] = dG_eff
     df2['1/T'] = X
-    df2['ln(P h del / kB T lam^2)'] = Y
+    df2['ln(P/T)'] = Y
+
+    fig2, ax2 = plt.subplots(1,1, figsize=(8,8))
+    ax2 = sns.regplot(x='1/T', y='ln(P/T)', data=df2, ax=ax2)
 
     if plot:
         # plot effective, single path, mean barriers
