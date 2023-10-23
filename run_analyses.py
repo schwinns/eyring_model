@@ -450,7 +450,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
 
     multi = True
 
-    temps = np.array([250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350])
+    # temps = np.array([250, 260, 270, 280, 290, 300, 310, 320, 330, 340, 350])
+    temps = np.array([250, 260, 270, 280, 290, 300, 320, 330, 340, 350])
 
     dG_eff = np.zeros(len(temps))
     P = np.zeros(len(temps))
