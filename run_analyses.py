@@ -258,11 +258,13 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
 def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
 
-    print(f'\nPlotting 4 realizations of barrier paths through the membrane...')
+    n_paths = 4
+    print(f'\nPlotting {n_paths} realizations of barrier paths through the membrane...')
 
-    fig, ax = plt.subplots(4,1, figsize=(10,10), sharex=True, sharey=True)
+    fig, ax = plt.subplots(n_paths,1, figsize=(10,10), sharex=True, sharey=True)
+    n_jumps = 100
 
-    for i in range(4):
+    for i in range(n_paths):
     
         dist = 'normal'
         params = {
@@ -270,7 +272,7 @@ def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
                 'cov' : np.array([[dH_sigma**2,0],
                                   [0,dS_sigma**2]])
                 }
-        model = Path(T=T, n_jumps=100)
+        model = Path(T=T, n_jumps=n_jumps)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
 
@@ -287,7 +289,7 @@ def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
 
         dist = 'exponential'
         params = {'beta'  : np.array([dH_barrier, dS_barrier])}
-        model = Path(T=T, n_jumps=100)
+        model = Path(T=T, n_jumps=n_jumps)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
 
@@ -1041,7 +1043,7 @@ if __name__ == '__main__':
     # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     
     # Figure 3
-    # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
 
     # Figure 4
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
@@ -1061,7 +1063,7 @@ if __name__ == '__main__':
     #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
     # Figure 8
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
+    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
     
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
