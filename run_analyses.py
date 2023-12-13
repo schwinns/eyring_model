@@ -177,6 +177,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
 
     print(f'Means: {mean_equal} (equal), {mean_norm} (normal), {mean_exp} (exponential)')
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
+    print(f'Effective barriers: {effective_barrier_equal} (equal) {effective_barrier_norm} (normal), {effective_barrier_exp} (exponential)')
 
     # fig1, ax1 = plt.subplots(1,1, figsize=(6,6))
     # sns.scatterplot(data=df_norm, x='pores', y='permeability', ax=ax1)
@@ -258,13 +259,11 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
 def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
 
-    n_paths = 4
-    print(f'\nPlotting {n_paths} realizations of barrier paths through the membrane...')
+    print(f'\nPlotting 4 realizations of barrier paths through the membrane...')
 
-    fig, ax = plt.subplots(n_paths,1, figsize=(10,10), sharex=True, sharey=True)
-    n_jumps = 100
+    fig, ax = plt.subplots(4,1, figsize=(10,10), sharex=True, sharey=True)
 
-    for i in range(n_paths):
+    for i in range(4):
     
         dist = 'normal'
         params = {
@@ -272,7 +271,7 @@ def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
                 'cov' : np.array([[dH_sigma**2,0],
                                   [0,dS_sigma**2]])
                 }
-        model = Path(T=T, n_jumps=n_jumps)
+        model = Path(T=T, n_jumps=100)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
 
@@ -289,7 +288,7 @@ def plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
 
         dist = 'exponential'
         params = {'beta'  : np.array([dH_barrier, dS_barrier])}
-        model = Path(T=T, n_jumps=n_jumps)
+        model = Path(T=T, n_jumps=100)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
         dG_eff = model.calculate_effective_barrier()
 
@@ -459,6 +458,8 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     P = np.zeros(len(temps))
     X = np.zeros(len(temps))
     Y = np.zeros(len(temps))
+    max_barriers_norm = np.zeros((len(temps),n_paths,2))
+    max_barriers_exp = np.zeros((len(temps),n_paths,2))
 
     hist_alpha = 0.5
     error_alpha = 0.1
@@ -486,6 +487,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         for n in range(n_paths):
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+            max_barriers_norm[i,n,:] = np.array([model.paths[n].enthalpic_barriers.max(), model.paths[n].entropic_barriers.min()])
             if plot:
                 [all_dH.append(b) for b in model.paths[n].enthalpic_barriers]
                 [all_dS.append(b) for b in model.paths[n].entropic_barriers]
@@ -611,6 +613,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         for n in range(n_paths):
             model.add_Path(n_jumps=200, lam=10)
             model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
+            max_barriers_exp[i,n,:] = np.array([model.paths[n].enthalpic_barriers.max(), model.paths[n].entropic_barriers.min()])
             if plot:
                 [all_dH.append(b) for b in model.paths[n].enthalpic_barriers]
                 [all_dS.append(b) for b in model.paths[n].entropic_barriers]
@@ -719,7 +722,36 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         ax[1,1].legend(fontsize=12, frameon=False, ncol=1)
         ax[1,2].legend(fontsize=12, frameon=False, ncol=1)
 
-    plt.savefig('figs/dH_dS_distributions.png')
+    if plot:
+        # plot maximum barriers
+        fig3, ax3 = plt.subplots(2,2, figsize=(14,10), sharex=True)
+
+        paths = np.arange(1, n_paths+1)
+
+        for i, T in enumerate(temps):
+
+            # plot the max enthalpies for a given temperature
+            ax3[0,0].scatter(paths, max_barriers_norm[i,:,0], s=2, alpha=0.1, facecolor='tab:blue')
+            ax3[1,0].scatter(paths, max_barriers_exp[i,:,0], s=2, alpha=0.1, facecolor='tab:orange')
+
+            # plot the max entropies for a given temperature
+            ax3[0,1].scatter(paths, max_barriers_norm[i,:,1], s=2, alpha=0.1, facecolor='tab:blue')
+            ax3[1,1].scatter(paths, max_barriers_exp[i,:,1], s=2, alpha=0.1, facecolor='tab:orange')
+
+            # formatting
+            ax3[1,0].set_xlabel('Paths', fontsize=14)
+            ax3[1,1].set_xlabel('Paths', fontsize=14)
+            ax3[0,0].set_ylabel('$\Delta H_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=14)
+            ax3[0,1].set_ylabel('$\Delta S_{M,i,max}^{\ddag}$ (kcal/mol/K)', fontsize=14)
+            ax3[1,0].set_ylabel('$\Delta H_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=14)
+            ax3[1,1].set_ylabel('$\Delta S_{M,i,max}^{\ddag}$ (kcal/mol/K)', fontsize=14)
+            ax3[1,0].set_title('Exponentially distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
+            ax3[1,1].set_title('Exponentially distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=14)
+            ax3[0,0].set_title('Normally distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=14)
+            ax3[0,1].set_title('Normally distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=14)
+
+
+    fig.savefig('figs/dH_dS_distributions.png')
     plt.show()
 
 
@@ -958,13 +990,18 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
             min_max_barrier = mb
             min_max_idx = i
 
-    # print(f'Min maximum index: {min_max_idx}')
+    # print(f'Min maximum: {min_max_barrier} at {min_max_idx}')
+
+    max_perm_path = model.paths[model.permeabilities.argmax()]
+    max_perm_path_barrier = max_perm_path.membrane_barriers.max()
+
+    # print(f'Max perm path: {max_perm_path_barrier} at {model.permeabilities.argmax()}')
 
     jumps = min_max_path.jump_lengths.cumsum()
     barriers = min_max_path.membrane_barriers
 
     if min_max_idx == model.permeabilities.argmax():
-        return min_max_idx == model.permeabilities.argmax()
+        return min_max_idx == model.permeabilities.argmax(), 0
 
     if plot:
         
@@ -1010,7 +1047,8 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         plt.savefig('figs/vary_everything_no_max_barriers.png')
         plt.show()
 
-    return min_max_idx == model.permeabilities.argmax()
+    # compare the difference in barrier heights to kT in kcal/mol
+    return min_max_idx == model.permeabilities.argmax(), max_perm_path_barrier - min_max_barrier 
 
 
 if __name__ == '__main__':
@@ -1043,7 +1081,7 @@ if __name__ == '__main__':
     # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     
     # Figure 3
-    plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    # plot_paths(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
 
     # Figure 4
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
@@ -1063,16 +1101,27 @@ if __name__ == '__main__':
     #     is_equal = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=n_paths)
 
     # Figure 8
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
     
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
 
     # Calculate percentage of smallest max path == most permeable path
-    # n_iter = 1000
+    # barrier_dist = 'exp'
+    # barrier_params = {'beta' : np.array([dH_barrier, dS_barrier])}
+
+    # n_iter = 3000
     # smallest_max_is_most_perm = 0
+    # barrier_differences = np.zeros(n_iter)
     # for i in tqdm(range(n_iter)):
-        # if vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000, plot=False):
-            # smallest_max_is_most_perm += 1
+    #     is_equal, diff = vary_everything(avg_jumps, jump_dist, jump_params, barrier_dist, barrier_params, n_paths=2000, plot=False)
+    #     if is_equal:
+    #         smallest_max_is_most_perm += 1
+    #     else:
+    #         barrier_differences[i] = diff
+
+    # barrier_differences = barrier_differences[barrier_differences != 0]
+    # kT_cutoff = barrier_differences <= 1.987204259*10**-3*T
 
     # print(f'The path with the smallest maximum barrier is the most permeable path {smallest_max_is_most_perm/n_iter*100:.2f}% of {n_iter} iterations')
+    # print(f'Of the {n_iter-smallest_max_is_most_perm} iterations where the smallest maximum barrier path is not the most permeable path, the maximum barrier of the most permeable path is within kT of the smallest maximum barrier {kT_cutoff.sum() / kT_cutoff.shape[0]*100:.2f}% of the time')
