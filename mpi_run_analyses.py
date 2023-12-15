@@ -30,14 +30,14 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
 
     # run this on all available processors
 
-    def calculate_barriers_permeability(N, dist, dist_params, T=T, multi=multi):
+    def calculate_barriers(N, dist, dist_params, T=T, multi=multi):
 
         model = EyringModel(T=T)
         for n in range(N):
-            model.add_Path(n_jumps=50, lam=10) # 10 Angstrom jump lengths over 50
+            model.add_Path(n_jumps=200, lam=10, area=model.area/N) # 2 Angstrom jump lengths over 200 jumps, no entropic penalty
             model.paths[n].generate_membrane_barriers(dist=dist, dist_params=dist_params, multi=multi)
 
-        return model.calculate_effective_barrier(), model.calculate_permeability()
+        return model.calculate_effective_barrier()
 
     ########### DISTRIBUTE THE WORK ACROSS PROCESSORS ##########
 
@@ -51,7 +51,6 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
         print(f'\n{nprocs} processors calculating the path convergence of {dist} distributions of barriers')
 
         fig1, ax1 = plt.subplots(1,1)
-        fig2, ax2 = plt.subplots(1,1)
         
         # Increasing number of paths to see how effective barrier changes (when it stabilizes)
         n_paths = np.array([50,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,
@@ -132,35 +131,31 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
             print(f'Realization {r+1}...')
 
         for i,N in enumerate(my_paths):
-            effective_barriers[i], permeabilities[i] = calculate_barriers_permeability(N, dist, params)
+            effective_barriers[i] = calculate_barriers(N, dist, params)
 
         # create big arrays for Gather
         all_barriers = np.zeros(sum(count))
-        all_permeabilities = np.zeros(sum(count))
 
         # gather all the barriers and permeabilities back to master for plotting
         comm.Gatherv(effective_barriers, [all_barriers, count, displ, MPI.DOUBLE], root=0)
-        comm.Gatherv(permeabilities, [all_permeabilities, count, displ, MPI.DOUBLE], root=0)
 
         if rank == 0:
             # save for average across realizations 
             avg_barrier += all_barriers
-            avg_permeability += all_permeabilities
 
             ax1.scatter(n_paths, all_barriers, alpha=0.1, c='k')
-            ax2.scatter(n_paths, all_permeabilities, alpha=0.1, c='k')
         
 
     if rank == 0:
-        data = np.column_stack((n_paths, avg_barrier/realizations, avg_permeability/realizations))
+        data = np.column_stack((n_paths, avg_barrier/realizations))
         np.savetxt(f'avg_convergence_{dist}_{realizations}iter.csv', data, delimiter=',')
-        ax1.scatter(n_paths, avg_barrier / realizations, c='r')
-        ax2.scatter(n_paths, avg_permeability / realizations, c='r')
+        ax1.scatter(n_paths, avg_barrier / realizations, c='r', label='average over paths')
 
-        ax1.set_xlabel('number of paths')
-        ax1.set_ylabel('effective barrier')
-        ax2.set_xlabel('number of paths')
-        ax2.set_ylabel('permeability')
+        ax1.set_xlabel('Number of Paths', fontsize=16)
+        ax1.set_ylabel('$\Delta G_{eff}^{\ddag}$ (kcal/mol)', fontsize=16)
+        ax1.tick_params('both', labelsize=14)
+        plt.legend(fontsize=16)
+        fig1.savefig('effective_barrier_convergence.png')
         plt.show()
 
     my_end = timer()
@@ -169,17 +164,19 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
 
 if __name__ == "__main__":
 
+    plt.rcParams['text.usetex'] = True
+
     # Inputs
-    iters = 300
+    iters = 100
     T = 300
     multi = True
     dH_barrier = 3.5
-    dS_barrier = -9/300
-    dH_sigma = 3.5/3
-    dS_sigma = 3/300
+    dS_barrier = -9/T
+    dH_sigma = dH_barrier/3
+    dS_sigma = -dS_barrier/3
 
     # normal distributions
-    # path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
+    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
 
     # exponential distributions
-    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)
+    # path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)

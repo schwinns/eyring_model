@@ -1108,7 +1108,7 @@ if __name__ == '__main__':
     # print(f'Of the {n_iter-smallest_max_is_most_perm} iterations where the smallest maximum barrier path is not the most permeable path, the maximum barrier of the most permeable path is within kT of the smallest maximum barrier {kT_cutoff.sum() / kT_cutoff.shape[0]*100:.2f}% of the time')
 
     # Figure 6
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
+    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
 
     # Figure S1
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
