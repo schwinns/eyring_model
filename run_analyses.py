@@ -7,6 +7,7 @@ import seaborn as sns
 from tqdm import tqdm
 
 from scipy.interpolate import CubicSpline
+from scipy.stats import truncnorm
 import statsmodels.api as sm
 
 from eyring_model import EyringModel, Path
@@ -1038,7 +1039,82 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         plt.show()
 
     # compare the difference in barrier heights to kT in kcal/mol
-    return min_max_idx == model.permeabilities.argmax(), max_perm_path_barrier - min_max_barrier 
+    return min_max_idx == model.permeabilities.argmax(), max_perm_path_barrier - min_max_barrier
+
+
+def simulated_RO_v_NF(dH_RO, dS_RO, dH_NF, dS_NF, n_jumps=200, n_paths=2000, T=300, n_bootstraps=50):
+    '''Similar to the experimental comparison between RO and NF barriers, calculate effective barriers for high mean, high variance (RO) model and low mean, high variance (NF) model'''
+
+    # Numerical representation of RO membrane
+
+    model_RO = EyringModel(T=T)
+    dist = 'normal'
+    params = {'mu'  : np.array([dH_RO, dS_RO]),
+              'cov' : np.array([[5**2,0],
+                                [0,5/T**2]])}
+    
+    m0 = params['mu'][0]
+    m1 = params['mu'][1]
+    s0 = np.sqrt(params['cov'][0,0])
+    s1 = np.sqrt(params['cov'][1,1])
+    
+    # do a bootstrap to get error on effective barrier
+    print('\nCalculating effective barrier for RO membrane...')
+    effective_barriers_RO = np.zeros(n_bootstraps)
+    for b in tqdm(range(n_bootstraps)):
+
+        # membrane barrier distribution
+        for n in range(n_paths):
+            model_RO.add_Path(n_jumps=n_jumps, area=model_RO.area/n_paths)
+            # model_RO.paths[n].generate_membrane_barriers(dist=dist, multi=True, dist_params=params)
+            d0 = truncnorm((0-m0)/s0, (10**6-m0)/s0, loc=m0, scale=s0)
+            dH = d0.rvs(n_jumps)
+            d1 = truncnorm((-10**6-m1)/s1, (0-m1)/s1, loc=m1, scale=s1)
+            dS = d1.rvs(n_jumps)
+
+            model_RO.paths[n].enthalpic_barriers = dH
+            model_RO.paths[n].entropic_barriers = dS
+            model_RO.paths[n].membrane_barriers = dH - T*dS
+            
+        effective_barriers_RO[b] = model_RO.calculate_effective_barrier()
+
+    print(effective_barriers_RO)
+    print(f'RO effective barrier: {effective_barriers_RO.mean():.2f} +/- {effective_barriers_RO.std():.2f} kcal/mol')
+
+    # Numerical representation of NF membrane
+
+    model_NF = EyringModel(T=T)
+    dist = 'normal'
+    params = {'mu'  : np.array([dH_NF, dS_NF]),
+              'cov' : np.array([[5**2,0],
+                                [0,5/T**2]])}
+
+    m0 = params['mu'][0]
+    m1 = params['mu'][1]
+    s0 = np.sqrt(params['cov'][0,0])
+    s1 = np.sqrt(params['cov'][1,1])
+        
+    # do a bootstrap to get error on effective barrier
+    print('\nCalculating effective barrier for NF membrane...')
+    effective_barriers_NF = np.zeros(n_bootstraps)
+    for b in tqdm(range(n_bootstraps)):
+
+        # membrane barrier distribution
+        for n in range(n_paths):
+            model_NF.add_Path(n_jumps=n_jumps, area=model_NF.area/n_paths)
+            # model_NF.paths[n].generate_membrane_barriers(dist=dist, multi=True, dist_params=params)
+            d0 = truncnorm((0-m0)/s0, (10**6-m0)/s0, loc=m0, scale=s0)
+            dH = d0.rvs(n_jumps)
+            d1 = truncnorm((-10**6-m1)/s1, (0-m1)/s1, loc=m1, scale=s1)
+            dS = d1.rvs(n_jumps)
+
+            model_NF.paths[n].enthalpic_barriers = dH
+            model_NF.paths[n].entropic_barriers = dS
+            model_NF.paths[n].membrane_barriers = dH - T*dS
+            
+        effective_barriers_NF[b] = model_NF.calculate_effective_barrier()
+
+    print(f'NF effective barrier: {effective_barriers_NF.mean():.2f} +/- {effective_barriers_NF.std():.2f} kcal/mol')
 
 
 if __name__ == '__main__':
@@ -1115,3 +1191,5 @@ if __name__ == '__main__':
 
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
+
+    simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1000)
