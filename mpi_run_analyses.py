@@ -176,7 +176,7 @@ if __name__ == "__main__":
     dS_sigma = -dS_barrier/3
 
     # normal distributions
-    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
+    # path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
 
     # exponential distributions
-    # path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)
+    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)
