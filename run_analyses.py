@@ -187,7 +187,7 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
     print(f'\nComparing effective barriers for a single path through the membrane...')
 
-    fig, ax = plt.subplots(1,1, figsize=(12,6))
+    fig, ax = plt.subplots(1,1, figsize=(12.8,7.2))
 
     # Generate normally distributed barriers
     dist = 'normal'
@@ -222,6 +222,7 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
     ax.tick_params(axis='x', labelsize=14)
     ax.tick_params(axis='y', labelsize=14)
     plt.legend(loc='center', frameon=False, fontsize=16, ncol=1)
+    fig.savefig('figs/effective_barrier_distribution_comparison.pdf')
     plt.show()
 
 def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True):
@@ -1144,7 +1145,7 @@ if __name__ == '__main__':
     # Choose what analyses to run
 
     # Figure 2a
-    # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
     
     # Figure 2b
     # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
@@ -1191,5 +1192,4 @@ if __name__ == '__main__':
 
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-
-    simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1000)
+    # simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1000)
