@@ -27,7 +27,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
 
     print(f'\nCalculating effective barriers and fractions of permeability for {n_paths} paths through the membrane...')
 
-    fig, ax = plt.subplots(3,1, figsize=(12.8,7.2), sharex=True)
+    fig, ax = plt.subplots(3,1, figsize=(7.25,3.55), sharex=True)
 
     # ALL MEMBRANE BARRIERS EQUAL
 
@@ -145,27 +145,23 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # PLOTTING
 
     # plot the effective barrier
-    ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
-    ax[0].legend(frameon=False, fontsize=16)
-    ax[0].set_ylabel('Density', fontsize=16)
-    ax[0].tick_params(axis='y', labelsize=14)
-    ax[0].set_title('Series of equal barriers, standard deviation = 0 kcal/mol', fontsize=16)
+    ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
+    ax[0].legend(frameon=False)
+    ax[0].set_ylabel('Density')
+    # ax[0].set_title('Series of equal barriers, standard deviation = 0 kcal/mol')
 
-    ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
-    ax[1].legend(frameon=False, fontsize=16)
-    ax[1].set_ylabel('Density', fontsize=16)
-    ax[1].tick_params(axis='y', labelsize=14)
-    ax[1].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed, standard deviation = 3 kcal/mol', fontsize=16)
+    ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
+    ax[1].legend(frameon=False)
+    ax[1].set_ylabel('Density')
+    # ax[1].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed, standard deviation = 3 kcal/mol')
 
-    ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
-    ax[2].legend(frameon=False, fontsize=16)
-    ax[2].set_ylabel('Density', fontsize=16)
-    ax[2].tick_params(axis='y', labelsize=14)
-    ax[2].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed, standard deviation = 10 kcal/mol', fontsize=16)
+    ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
+    ax[2].legend(frameon=False)
+    ax[2].set_ylabel('Density')
+    # ax[2].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed, standard deviation = 10 kcal/mol')
 
-    ax[2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=16)
+    ax[2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)')
     ax[2].set_xlim(0,100)
-    ax[2].tick_params(axis='x', labelsize=14)
 
     plt.savefig('figs/hist_effective_individual_barriers_no_penalty.pdf')
 
@@ -173,12 +169,12 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
     print(f'Effective barriers: {effective_barrier_equal} (equal) {effective_barrier_norm} (normal), {effective_barrier_exp} (exponential)')
     
-    fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
-    sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
-    sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
-    sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
-    ax3.set_xlabel('fraction of the pores')
-    ax3.set_ylabel('fraction of the flux')
+    # fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
+    # sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
+    # sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
+    # sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
+    # ax3.set_xlabel('fraction of the pores')
+    # ax3.set_ylabel('fraction of the flux')
 
     plt.show()
 
@@ -187,7 +183,7 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
     print(f'\nComparing effective barriers for a single path through the membrane...')
 
-    fig, ax = plt.subplots(1,1, figsize=(12.8,7.2))
+    fig, ax = plt.subplots(1,1, figsize=(7.25,1.95))
 
     # Generate normally distributed barriers
     dist = 'normal'
@@ -198,10 +194,10 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
     model = Path(T=T, n_jumps=200)
     model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
     dG_eff = model.calculate_effective_barrier()
-    sns.histplot(model.membrane_barriers, color='tab:blue', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='normal', linewidth=0.5)
+    sns.histplot(model.membrane_barriers, color='tab:blue', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='normal barriers', linewidth=0.5)
     ymin, ymax = plt.ylim()
     ax.axvline(dG_eff, ls='dashed', c='tab:blue')
-    ax.text(dG_eff*1.05, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:blue', fontsize=16)
+    ax.text(dG_eff*1.05, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:blue')
 
     # Generate exponentially distributed barriers
     dist = 'exponential'
@@ -210,18 +206,16 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
     model = Path(T=T)
     model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
     dG_eff = model.calculate_effective_barrier()
-    sns.histplot(model.membrane_barriers, color='tab:orange', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='exponential', linewidth=0.5)
+    sns.histplot(model.membrane_barriers, color='tab:orange', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='exponential barriers', linewidth=0.5)
     ymin, ymax = plt.ylim()
     ax.axvline(dG_eff, ls='dashed', c='tab:orange')
-    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:orange', fontsize=16)
+    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:orange')
     
     # formatting
-    ax.set_xlabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=16)
-    ax.set_ylabel('Density', fontsize=16)
+    ax.set_xlabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)')
+    ax.set_ylabel('Density')
     ax.set_xlim(0,)
-    ax.tick_params(axis='x', labelsize=14)
-    ax.tick_params(axis='y', labelsize=14)
-    plt.legend(loc='center', frameon=False, fontsize=16, ncol=1)
+    plt.legend(loc='center', frameon=False, ncol=1)
     fig.savefig('figs/effective_barrier_distribution_comparison.pdf')
     plt.show()
 
@@ -230,7 +224,7 @@ def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     print(f'\nPlotting {n} realizations of barrier paths through the membrane...')
 
     # fig, ax = plt.subplots(n,1, figsize=(12.8,n*2+3.5), sharex=True, sharey=True)
-    fig, ax = plt.subplots(n,1, figsize=(12.8,7.2), sharex=True, sharey=True)
+    fig, ax = plt.subplots(n,1, figsize=(7.25,1.95), sharex=True, sharey=True)
 
     for i in range(n):
     
@@ -256,13 +250,13 @@ def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
 
         # plot the path
         if n > 1:
-            ax[i].plot(xs, ys, color='tab:blue', alpha=1, label='normal')
+            ax[i].plot(xs, ys, color='tab:blue', alpha=1, label='normal barriers')
             ax[i].axhline(dG_eff, c='tab:blue', ls='dashed')
-            ax[i].text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=16, color='tab:blue')
+            ax[i].text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', color='tab:blue')
         else:
-            ax.plot(xs, ys, color='tab:blue', alpha=1, label='normal')
+            ax.plot(xs, ys, color='tab:blue', alpha=1, label='normal barriers')
             ax.axhline(dG_eff, c='tab:blue', ls='dashed')
-            ax.text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=16, color='tab:blue')
+            ax.text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', color='tab:blue')
 
         # repeat for exponentially distributed barriers
         dist = 'exponential'
@@ -279,35 +273,31 @@ def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
         ys = path_spline(xs)
 
         if n > 1:
-            ax[i].plot(xs, ys, color='tab:orange', alpha=0.75, label='exponential')
+            ax[i].plot(xs, ys, color='tab:orange', alpha=0.75, label='exponential barriers')
             ax[i].axhline(dG_eff, c='tab:orange', ls='dashed')
-            ax[i].text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=16, color='tab:orange')
+            ax[i].text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', color='tab:orange')
 
-            ax[i].set_ylabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=16)
-            ax[i].legend(loc='upper right', fontsize=16, ncol=2,
+            ax[i].set_ylabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)')
+            ax[i].legend(loc='upper right', ncol=2,
                         frameon=False, borderpad=0.2)
             ax[i].set_ylim(0,dG_eff*1.2)
-            ax[i].tick_params(axis='y', labelsize=14)
         else:
-            ax.plot(xs, ys, color='tab:orange', alpha=0.75, label='exponential')
+            ax.plot(xs, ys, color='tab:orange', alpha=0.75, label='exponential barriers')
             ax.axhline(dG_eff, c='tab:orange', ls='dashed')
-            ax.text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', fontsize=16, color='tab:orange')
+            ax.text(model.lam, dG_eff+2, '$\Delta G_{eff}^{\ddag}$', ha='right', color='tab:orange')
 
-            ax.set_ylabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)', fontsize=16)
-            ax.legend(loc='upper right', fontsize=16, ncol=2,
+            ax.set_ylabel('$\Delta G_{M,j}^{\ddag}$ (kcal/mol)')
+            ax.legend(loc='upper right', ncol=2,
                         frameon=False, borderpad=0.2)
             ax.set_ylim(0,dG_eff*1.2)
-            ax.tick_params(axis='y', labelsize=14)
 
     # some overall formatting
     if n > 1:
         ax[i].set_xlim(-9*model.lam,)
-        ax[i].set_xlabel('Transport Coordinate ($\mathrm{\AA}$)', fontsize=16)
-        ax[i].tick_params(axis='x', labelsize=14)
+        ax[i].set_xlabel('Transport Coordinate ($\mathrm{\AA}$)')
     else:
         ax.set_xlim(-9*model.lam,)
-        ax.set_xlabel('Transport Coordinate ($\mathrm{\AA}$)', fontsize=16)
-        ax.tick_params(axis='x', labelsize=14)
+        ax.set_xlabel('Transport Coordinate ($\mathrm{\AA}$)')
     
     plt.savefig('figs/barrier_profile_1_path.pdf')
     plt.show()
@@ -434,8 +424,8 @@ def compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=300, mult
     # ax.fill_between(lambdas, effective_barriers[:,0]-effective_barriers[:,1], effective_barriers[:,0]+effective_barriers[:,1], alpha=0.25, color='tab:orange')
     print(f'Effective barrier changes from {effective_barriers[0,0]:.4f} +/- {effective_barriers[0,1]:.4f} to {effective_barriers[-1,0]:.4f} +/- {effective_barriers[-1,1]:.4f} as mean jump length increases from {lambdas[0]} to {lambdas[-1]}')
     
-    ax.set_xlabel('Mean jumpth length ($\mathrm{\AA}$)', fontsize=16)
-    ax.set_ylabel('$\Delta G_{eff}^{\ddag}$ (kcal/mol)', fontsize=16)
+    ax.set_xlabel('Mean jumpth length ($\mathrm{\AA}$)')
+    ax.set_ylabel('$\Delta G_{eff}^{\ddag}$ (kcal/mol)')
     ax.set_xticks(np.arange(11))
     ax.set_xlim(0,10)
     ax.legend(fontsize=16)
@@ -463,7 +453,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     hist_alpha = 0.5
     error_alpha = 0.1
 
-    fig, ax = plt.subplots(2,3, figsize=(18,10), sharex=False)
+    fig, ax = plt.subplots(2,3, figsize=(7.25,5.5), sharex=False, sharey=True)
 
     # MULTIVARIATE NORMAL
 
@@ -552,39 +542,41 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
 
     if plot:
         # plot effective, single path, mean barriers
-        ax[0,0].set_title('Normally distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=16)
-        ax[0,1].set_title('Normally distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=16)
-        ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from normal $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$')
+        ax[0,0].set_title('Normally distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[0,1].set_title('Normally distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        # ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from normal $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K', fontsize=8)
 
-        ax[0,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[0,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=1)
         ax[0,0].axvspan(eff_dH[0] - eff_dH[1], eff_dH[0] + eff_dH[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
+        ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=1)
         ax[0,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
         
-        ax[0,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[0,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=1)
         ax[0,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[0,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=2)
+        ax[0,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=1)
         ax[0,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        ax[0,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[0,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
         ax[0,2].axvspan(eff_dG[0] - eff_dG[1], eff_dG[0] + eff_dG[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[0,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=2)
+        ax[0,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=1)
         ax[0,2].axvspan(avg_dG - sem_dG, avg_dG + sem_dG, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        ax[0,0].set_ylabel('Density', fontsize=16)
+        ax[0,0].set_ylabel('Density')
         ax[0,1].set_ylabel(None)
         ax[0,2].set_ylabel(None)
 
         ax[0,0].set_xlim(0,)
         ax[0,1].set_xlim(-0.1,0)
         ax[0,2].set_xlim(0,)
-        ax[0,0].tick_params('both', labelsize=14)
-        ax[0,1].tick_params('both', labelsize=14)
-        ax[0,2].tick_params('both', labelsize=14)
 
-        ax[0,0].legend(fontsize=16, frameon=False, ncol=1)
-        ax[0,1].legend(fontsize=16, frameon=False, ncol=1)
-        ax[0,2].legend(fontsize=16, frameon=False, ncol=1)
+        # ax[0,0].tick_params('y', labelrotation=45)
+        # ax[0,1].tick_params('y', labelrotation=45)
+        # ax[0,2].tick_params('y', labelrotation=45)
+
+        ax[0,0].legend(frameon=False, ncol=1)
+        ax[0,1].legend(frameon=False, ncol=1)
+        ax[0,2].legend(frameon=False, ncol=1)
 
     df1 = pd.DataFrame()
     df1['distribution'] = ['multi-variate normal']*len(temps)
@@ -650,8 +642,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     print(f'Average dS: {avg_dS} +/- {sem_dS}')
     print(f'Average dG: {avg_dG} +/- {sem_dG}')
 
-    # A = np.vstack([X, np.ones(len(X))]).T
-    # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
     A = sm.add_constant(X)
     ols = sm.OLS(Y, A)
     results = ols.fit()
@@ -689,42 +679,44 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
 
     if plot:
         # plot effective, single path, mean barriers
-        ax[1,0].set_title('Exponentially distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=16)
-        ax[1,1].set_title('Exponentially distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=16)
-        ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from exponential $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$')
+        ax[1,0].set_title('Exponentially distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[1,1].set_title('Exponentially distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        # ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from exponential $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K', fontsize=8)
 
-        ax[1,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=2)
+        ax[1,0].axvline(eff_dH[0], ls='dashed', c='k', label='$\Delta H_{eff}^{\ddag}$', lw=1)
         ax[1,0].axvspan(eff_dH[0] - eff_dH[1], eff_dH[0] + eff_dH[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=2)
+        ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=1)
         ax[1,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
         
-        ax[1,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=2)
+        ax[1,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=1)
         ax[1,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[1,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=2)
+        ax[1,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=1)
         ax[1,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
 
-        ax[1,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=2)
+        ax[1,2].axvline(eff_dG[0], ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
         ax[1,2].axvspan(eff_dG[0] - eff_dG[1], eff_dG[0] + eff_dG[1], facecolor='k', edgecolor=None, alpha=error_alpha)
-        ax[1,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=2)
+        ax[1,2].axvline(avg_dG, ls='dashed', c='red', label='mean', lw=1)
         ax[1,2].axvspan(avg_dG - sem_dG, avg_dG + sem_dG, facecolor='red', edgecolor=None, alpha=error_alpha)
 
         ax[1,0].set_xlim(0,25)
         ax[1,1].set_xlim(-0.2,0)
         ax[1,2].set_xlim(0,60)
-        ax[1,0].tick_params('both', labelsize=14)
-        ax[1,1].tick_params('both', labelsize=14)
-        ax[1,2].tick_params('both', labelsize=14)
 
-        ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=16)
-        ax[1,1].set_xlabel('$\Delta S_{M,i,j}^{\ddag}$ (kcal/mol/K)', fontsize=16)
-        ax[1,2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)', fontsize=16)
-        ax[1,0].set_ylabel('Density', fontsize=16)
+        ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$ (kcal/mol)')
+        ax[1,1].set_xlabel('$\Delta S_{M,i,j}^{\ddag}$ (kcal/mol/K)')
+        ax[1,2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)')
+        ax[1,0].set_ylabel('Density')
         ax[1,1].set_ylabel(None)
         ax[1,2].set_ylabel(None)
 
-        ax[1,0].legend(fontsize=16, frameon=False, ncol=1)
-        ax[1,1].legend(fontsize=16, frameon=False, ncol=1)
-        ax[1,2].legend(fontsize=16, frameon=False, ncol=1)
+        # ax[1,0].tick_params('y', labelrotation=45)
+        # ax[1,1].tick_params('y', labelrotation=45)
+        # ax[1,2].tick_params('y', labelrotation=45)
+
+        ax[1,0].legend(frameon=False, ncol=1)
+        ax[1,1].legend(frameon=False, ncol=1)
+        ax[1,2].legend(frameon=False, ncol=1)
 
     if plot:
         # plot maximum barriers
@@ -764,7 +756,7 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     print(f'\nShowing maximum barriers across parallel paths...')
 
     n_paths = 2000
-    fig1, ax1 = plt.subplots(1,1, figsize=(12.8,7.2))
+    fig1, ax1 = plt.subplots(1,1, figsize=(3.55,3.55/2))
 
     # NORMAL DISTRIBUTION OF BARRIERS
 
@@ -787,23 +779,22 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
 
     # plot the maximum barriers for arbitrarily numbered paths, plot effective barrier
     paths = np.arange(1, n_paths+1)
-    ax1.scatter(paths, max_barriers, edgecolors='k')
+    ax1.scatter(paths, max_barriers, edgecolors='k', s=10, lw=0.5)
     ax1.axhline(effective_barrier, ls='dashed', c='k')
     xmin, xmax = ax1.get_xlim()
     ymin, ymax = ax1.get_ylim()
-    ax1.text(xmax*0.75, effective_barrier-0.75, '$\Delta G_{eff}^{\ddag}$', fontsize=16)
+    ax1.text(xmax*0.75, effective_barrier-1, '$\Delta G_{eff}^{\ddag}$')
 
     # formatting
-    ax1.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=16)
+    ax1.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)')
     ax1.set_ylim(ymin-1, ymax)
-    ax1.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed', fontsize=16)
-    ax1.tick_params('both', labelsize=14)
+    ax1.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed', fontsize=8)
 
     fig1.savefig('figs/maximum_barriers_normal.pdf')
     
     # EXPONENTIAL DISTRIBUTION OF BARRIERS
 
-    fig2, ax2 = plt.subplots(1,1, figsize=(12.8,7.2))
+    fig2, ax2 = plt.subplots(1,1, figsize=(3.55,3.55/2))
 
     model = EyringModel(T=T)
     dist = 'exponential'
@@ -822,18 +813,17 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
 
     # plot maximum barriers and effective barrier
     paths = np.arange(1, n_paths+1)
-    ax2.scatter(paths, max_barriers, edgecolors='k', c='tab:orange')
+    ax2.scatter(paths, max_barriers, edgecolors='k', c='tab:orange', s=10, lw=0.5)
     ax2.axhline(effective_barrier, ls='dashed', c='k')
     xmin, xmax = ax2.get_xlim()
     ymin, ymax = ax2.get_ylim()
-    ax2.text(xmax*0.75, effective_barrier-6, '$\Delta G_{eff}^{\ddag}$', fontsize=16)
+    ax2.text(xmax*0.75, effective_barrier-8, '$\Delta G_{eff}^{\ddag}$')
 
     # formatting
-    ax2.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)', fontsize=16)
-    ax2.set_ylim(ymin-5, ymax)
-    ax2.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed', fontsize=16)
-    ax2.tick_params('both', labelsize=14)   
-    ax2.set_xlabel('Paths', fontsize=16)
+    ax2.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)')
+    ax2.set_ylim(ymin-10, ymax)
+    ax2.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed', fontsize=8)
+    ax2.set_xlabel('Paths')
 
     fig2.savefig('figs/maximum_barriers_exponential.pdf')
     plt.show()
@@ -998,7 +988,7 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
     # plot the maximum permeability path and the smallest maximum barrier path
     if plot and min_max_idx != model.permeabilities.argmax(): # don't plot until smallest barrier path is not the most permeable path
         
-        fig, ax = plt.subplots(1,1, figsize=(12,6))
+        fig, ax = plt.subplots(1,1, figsize=(7.25,3.55))
 
         # first, for the path with the smallest maximum barrier
         jumps = min_max_path.jump_lengths.cumsum()
@@ -1011,7 +1001,7 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         ax.plot(xs, ys, c='r', label='smallest maximum barrier path')
 
         # plot the number of jumps in the path
-        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='r', fontsize=16)
+        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='r')
 
         # and now for the max permeability path 
         jumps = max_perm_path.jump_lengths.cumsum()
@@ -1025,22 +1015,21 @@ def vary_everything(n_jumps_mu, jump_dist, jump_params, barrier_dist, barrier_pa
         ax.plot(xs, ys, c='b', label='maximum permeability path')
 
         # plot the number of jumps in the path
-        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='b', fontsize=16)
+        ax.text(jumps[-1]+5, barriers[-1], f'{len(jumps)} jumps', c='b')
 
         # plot the effective barrier shifted to account for entropic penalty
         xmin, xmax = ax.get_xlim()
         ymin, ymax = ax.get_ylim()
         shifted_dG_eff = dG_eff + R*T*np.log(np.sum(model.areas) / model.area)
         ax.axhline(shifted_dG_eff, ls='dashed', c='black')
-        ax.text(xmax*0.55, shifted_dG_eff+0.5, '$\Delta G_{eff}^{\ddag} + RT \ln(\sum_i^n A_i / A)$', ha='left', fontsize=16, c='black')
+        ax.text(xmax*0.55, shifted_dG_eff+0.5, '$\Delta G_{eff}^{\ddag} + RT \ln(\sum_i^n A_i / A)$', ha='left', c='black')
 
         # formatting
-        ax.set_xlabel('Transport Coordinate ($\mathrm{\AA}$)', fontsize=16)
-        ax.set_ylabel('$\Delta G^{\ddag}_{M,i,j}$', fontsize=16)
+        ax.set_xlabel('Transport Coordinate ($\mathrm{\AA}$)')
+        ax.set_ylabel('$\Delta G^{\ddag}_{M,i,j}$')
         ax.set_ylim(ymin, ymax+3)
-        ax.tick_params('both', labelsize=14)
-        ax.legend(frameon=False, fontsize=16, ncol=3, loc='upper center')
-        ax.set_title('Free energy paths through membrane, normally distributed barriers, normally distributed jumps', fontsize=16)
+        ax.legend(frameon=False, ncol=3, loc='upper center')
+        # ax.set_title('Free energy paths through membrane, normally distributed barriers, normally distributed jumps', fontsize=16)
 
         plt.savefig('figs/vary_everything_no_max_barriers.pdf')
         plt.show()
@@ -1127,6 +1116,9 @@ def simulated_RO_v_NF(dH_RO, dS_RO, dH_NF, dS_NF, n_jumps=200, n_paths=2000, T=3
 if __name__ == '__main__':
 
     plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Helvetica'
+    plt.rcParams['font.size'] = 8
+    plt.rc('text.latex', preamble=r'\usepackage[cm]{sfmath}')
 
     # Inputs
     T = 300
@@ -1191,7 +1183,7 @@ if __name__ == '__main__':
     # print(f'Of the {n_iter-smallest_max_is_most_perm} iterations where the smallest maximum barrier path is not the most permeable path, the maximum barrier of the most permeable path is within kT of the smallest maximum barrier {kT_cutoff.sum() / kT_cutoff.shape[0]*100:.2f}% of the time')
 
     # Figure 6
-    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
+    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
 
     # Figure S1
     # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
