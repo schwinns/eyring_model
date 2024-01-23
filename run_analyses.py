@@ -479,7 +479,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
             max_barriers_norm[i,n,:] = np.array([model.paths[n].enthalpic_barriers.max(), model.paths[n].entropic_barriers.min()])
             if plot:
                 [all_dH.append(b) for b in model.paths[n].enthalpic_barriers]
-                [all_dS.append(b) for b in model.paths[n].entropic_barriers]
+                [all_dS.append(-T*b) for b in model.paths[n].entropic_barriers]
                 if T == 300:
                     [all_dG.append(b) for b in model.paths[n].membrane_barriers]
 
@@ -512,8 +512,6 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     print(f'Average dS: {avg_dS} +/- {sem_dS}')
     print(f'Average dG: {avg_dG} +/- {sem_dG}')
 
-    # A = np.vstack([X, np.ones(len(X))]).T
-    # m, b = np.linalg.lstsq(A,Y, rcond=None)[0]
     A = sm.add_constant(X)
     ols = sm.OLS(Y, A)
     results = ols.fit()
@@ -521,8 +519,9 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     be, me = results.bse
 
     eff_dH = np.array([-m*R, me*R]) # estimate, error
-    eff_dS = np.array([b*R, be*R])
-    eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+    eff_dS = -300*np.array([b*R, be*R])
+    # eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+    eff_dG = np.array([eff_dH[0]+eff_dS[0], np.sqrt(eff_dH[1]**2 + (eff_dS[1])**2)])
 
     print(f'\ndH_eff : {eff_dH[0]} +/- {eff_dH[1]}')
     print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
@@ -543,7 +542,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     if plot:
         # plot effective, single path, mean barriers
         ax[0,0].set_title('Normally distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=8)
-        ax[0,1].set_title('Normally distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[0,1].set_title('Normally distributed $-T \Delta S_{M,i,j}^{\ddag}$', fontsize=8)
         # ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from normal $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
         ax[0,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K', fontsize=8)
 
@@ -552,7 +551,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         ax[0,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=1)
         ax[0,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
         
-        ax[0,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=1)
+        ax[0,1].axvline(eff_dS[0], ls='dashed', c='k', label='$-T \Delta S_{eff}^{\ddag}$', lw=1)
         ax[0,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[0,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=1)
         ax[0,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
@@ -567,7 +566,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         ax[0,2].set_ylabel(None)
 
         ax[0,0].set_xlim(0,)
-        ax[0,1].set_xlim(-0.1,0)
+        ax[0,1].set_xlim(0,)
         ax[0,2].set_xlim(0,)
 
         # ax[0,0].tick_params('y', labelrotation=45)
@@ -609,7 +608,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
             max_barriers_exp[i,n,:] = np.array([model.paths[n].enthalpic_barriers.max(), model.paths[n].entropic_barriers.min()])
             if plot:
                 [all_dH.append(b) for b in model.paths[n].enthalpic_barriers]
-                [all_dS.append(b) for b in model.paths[n].entropic_barriers]
+                [all_dS.append(-T*b) for b in model.paths[n].entropic_barriers]
                 if T == 300:
                     [all_dG.append(b) for b in model.paths[n].membrane_barriers]
 
@@ -649,8 +648,9 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     be, me = results.bse
     
     eff_dH = np.array([-m*R, me*R]) # estimate, error
-    eff_dS = np.array([b*R, be*R])
-    eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+    eff_dS = -300*np.array([b*R, be*R])
+    # eff_dG = np.array([eff_dH[0]-300*eff_dS[0], np.sqrt(eff_dH[1]**2 + (300*eff_dS[1])**2)])
+    eff_dG = np.array([eff_dH[0]+eff_dS[0], np.sqrt(eff_dH[1]**2 + (eff_dS[1])**2)])
 
     print(f'\ndH_eff : {eff_dH[0]} +/- {eff_dH[1]}')
     print(f'dS_eff : {eff_dS[0]} +/- {eff_dS[1]} or -T dS_eff at 300 K: {-300*eff_dS[0]} +/- {300*eff_dS[1]}')
@@ -680,7 +680,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
     if plot:
         # plot effective, single path, mean barriers
         ax[1,0].set_title('Exponentially distributed $\Delta H_{M,i,j}^{\ddag}$', fontsize=8)
-        ax[1,1].set_title('Exponentially distributed $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
+        ax[1,1].set_title('Exponentially distributed $-T \Delta S_{M,i,j}^{\ddag}$', fontsize=8)
         # ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K from exponential $\Delta H_{M,i,j}^{\ddag}$ and $\Delta S_{M,i,j}^{\ddag}$', fontsize=8)
         ax[1,2].set_title('$\Delta G_{M,i,j}^{\ddag}$ at 300 K', fontsize=8)
 
@@ -689,7 +689,7 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         ax[1,0].axvline(avg_dH, ls='dashed', c='red', label='mean', lw=1)
         ax[1,0].axvspan(avg_dH - sem_dH, avg_dH + sem_dH, facecolor='red', edgecolor=None, alpha=error_alpha)
         
-        ax[1,1].axvline(eff_dS[0], ls='dashed', c='k', label='$\Delta S_{eff}^{\ddag}$', lw=1)
+        ax[1,1].axvline(eff_dS[0], ls='dashed', c='k', label='$-T \Delta S_{eff}^{\ddag}$', lw=1)
         ax[1,1].axvspan(eff_dS[0] - eff_dS[1], eff_dS[0] + eff_dS[1], facecolor='k', edgecolor=None, alpha=error_alpha)
         ax[1,1].axvline(avg_dS, ls='dashed', c='red', label='mean', lw=1)
         ax[1,1].axvspan(avg_dS - sem_dS, avg_dS + sem_dS, facecolor='red', edgecolor=None, alpha=error_alpha)
@@ -700,11 +700,11 @@ def estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths, area=1e7
         ax[1,2].axvspan(avg_dG - sem_dG, avg_dG + sem_dG, facecolor='red', edgecolor=None, alpha=error_alpha)
 
         ax[1,0].set_xlim(0,25)
-        ax[1,1].set_xlim(-0.2,0)
+        ax[1,1].set_xlim(0,60)
         ax[1,2].set_xlim(0,60)
 
         ax[1,0].set_xlabel('$\Delta H_{M,i,j}^{\ddag}$ (kcal/mol)')
-        ax[1,1].set_xlabel('$\Delta S_{M,i,j}^{\ddag}$ (kcal/mol/K)')
+        ax[1,1].set_xlabel('$-T \Delta S_{M,i,j}^{\ddag}$ (kcal/mol)')
         ax[1,2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)')
         ax[1,0].set_ylabel('Density')
         ax[1,1].set_ylabel(None)
@@ -1074,7 +1074,6 @@ def simulated_RO_v_NF(dH_RO, dS_RO, dH_NF, dS_NF, n_jumps=200, n_paths=2000, T=3
             
         effective_barriers_RO[b] = model_RO.calculate_effective_barrier()
 
-    print(effective_barriers_RO)
     print(f'RO effective barrier: {effective_barriers_RO.mean():.2f} +/- {effective_barriers_RO.std():.2f} kcal/mol')
 
     # Numerical representation of NF membrane
@@ -1111,6 +1110,8 @@ def simulated_RO_v_NF(dH_RO, dS_RO, dH_NF, dS_NF, n_jumps=200, n_paths=2000, T=3
         effective_barriers_NF[b] = model_NF.calculate_effective_barrier()
 
     print(f'NF effective barrier: {effective_barriers_NF.mean():.2f} +/- {effective_barriers_NF.std():.2f} kcal/mol')
+
+    return model_RO, model_NF
 
 
 if __name__ == '__main__':
@@ -1190,4 +1191,14 @@ if __name__ == '__main__':
 
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
-    # simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1000)
+    # RO, NF = simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1)
+
+    # fig1 = plt.figure()
+    # for n in range(RO.n_paths):
+    #     plt.hist(RO.paths[n].membrane_barriers, alpha=0.1, bins=100, color='tab:blue')
+
+    # fig2 = plt.figure()
+    # for n in range(NF.n_paths):
+    #     plt.hist(NF.paths[n].membrane_barriers, alpha=0.1, bins=100, color='tab:orange')
+
+    # plt.show()
