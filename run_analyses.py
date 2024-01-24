@@ -20,10 +20,7 @@ h = 6.62607 * 10**-34      # Planck (m^2 kg / s)
 global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
-def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300, multi=True):
-
-    n_paths = 2000
-    n_jumps = 200
+def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_paths=2000, n_jumps=200, T=300, multi=True, output='figs/hist_effective_individual_barriers_no_penalty.pdf'):
 
     print(f'\nCalculating effective barriers and fractions of permeability for {n_paths} paths through the membrane...')
 
@@ -163,7 +160,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     ax[2].set_xlabel('$\Delta G_{M,i,j}^{\ddag}$ (kcal/mol)')
     ax[2].set_xlim(0,100)
 
-    plt.savefig('figs/hist_effective_individual_barriers_no_penalty.pdf')
+    plt.savefig(output)
 
     print(f'Means: {mean_equal} (equal), {mean_norm} (normal), {mean_exp} (exponential)')
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
@@ -177,6 +174,8 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300
     # ax3.set_ylabel('fraction of the flux')
 
     plt.show()
+
+    return model_equal, model_norm, model_exp
 
 
 def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300, multi=True):
@@ -906,7 +905,7 @@ def barrier_variance(dH_barrier, dS_barrier, n_paths=2000, T=300):
             dS_max = -10e8
             dG_max = -10e8
             for n in range(n_paths):
-                model.add_Path(lam=10)
+                model.add_Path(lam=10, area=model.area/n_paths)
                 model.paths[n].generate_membrane_barriers(dist=dist, multi=multi, dist_params=params)
                 dH_max = max(dH_max, model.paths[n].enthalpic_barriers.max())
                 dS_max = max(dS_max, model.paths[n].entropic_barriers.max())
@@ -1150,7 +1149,7 @@ if __name__ == '__main__':
     # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
 
     # Figure 3
-    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi)
+    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000)
 
     # Figure 4a,b
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
@@ -1184,21 +1183,45 @@ if __name__ == '__main__':
     # print(f'Of the {n_iter-smallest_max_is_most_perm} iterations where the smallest maximum barrier path is not the most permeable path, the maximum barrier of the most permeable path is within kT of the smallest maximum barrier {kT_cutoff.sum() / kT_cutoff.shape[0]*100:.2f}% of the time')
 
     # Figure 6
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)
-
-    # Figure S1
-    # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
+    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)    
 
     # Unused
     # fixed_jump_length(dH_barrier, dS_barrier, n_paths=n_paths, T=T, multi=multi)
     # RO, NF = simulated_RO_v_NF(dH_RO=4.6, dS_RO=-17.8/T, dH_NF=3.4, dS_NF=-17.9/T, n_paths=n_paths, T=T, n_bootstraps=1)
+    # compare_jump_lengths(dH_barrier, dS_barrier, n_paths, delta=400, T=T, multi=multi)
+    equal, normal, exponential = parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_jumps=5, n_paths=2000, T=T, multi=multi, output='figs/parallel_pores_5jumps.png')
 
-    # fig1 = plt.figure()
-    # for n in range(RO.n_paths):
-    #     plt.hist(RO.paths[n].membrane_barriers, alpha=0.1, bins=100, color='tab:blue')
+    plt.figure(figsize=(3.25, 2.6625))
+    plt.xlabel('paths')
+    plt.ylabel('flux fraction')
 
-    # fig2 = plt.figure()
-    # for n in range(NF.n_paths):
-    #     plt.hist(NF.paths[n].membrane_barriers, alpha=0.1, bins=100, color='tab:orange')
+    print('\n-------------------------- NORMAL --------------------------')
+    print(f'Overall barrier: {normal.calculate_effective_barrier():.4f}')
+    print(f'Overall permeability: {normal.calculate_permeability():.4f}')
 
-    # plt.show()
+    flux_frac = np.zeros(normal.n_paths)
+    for n,p in enumerate(normal.paths):
+        flux_frac[n] = p.calculate_permeability() / normal.permeabilities.sum()
+
+        print(f'Path {n}:')
+        print(f'\tEffective barrier: {p.calculate_effective_barrier():.4f}')
+        print(f'\tFlux fraction: {flux_frac[n]:.4e}')
+
+    plt.scatter(np.arange(normal.n_paths), flux_frac, label='normal')
+
+    print('\n-------------------------- EXPONENTIAL --------------------------')
+    print(f'Overall barrier: {exponential.calculate_effective_barrier():.4f}')
+    print(f'Overall permeability: {exponential.calculate_permeability():.4f}')
+
+    flux_frac = np.zeros(exponential.n_paths)
+    for n,p in enumerate(exponential.paths):
+        flux_frac[n] = p.calculate_permeability() / exponential.permeabilities.sum()
+
+        print(f'Path {n}:')
+        print(f'\tEffective barrier: {p.calculate_effective_barrier():.4f}')
+        print(f'\tFlux fraction: {flux_frac[n]:.4e}')
+
+    plt.scatter(np.arange(exponential.n_paths), flux_frac, label='exponential')
+
+    plt.legend()
+    plt.show()
