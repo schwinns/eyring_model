@@ -62,7 +62,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
 
     sns.histplot(effective_barriers, color='tab:gray', linewidth=1, ax=ax[0], 
                  stat='density', alpha=1, fill=False, label='path effective barriers')
-
+    
     # NORMAL DISTRIBUTION OF BARRIERS
 
     model_norm = EyringModel(T=T)
@@ -101,7 +101,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
 
     sns.histplot(effective_barriers, binwidth=1, color='tab:blue', linewidth=1, ax=ax[1],
                   stat='density', alpha=1, fill=False, label='path effective barriers')
-
+    
     # EXPONENTIAL DISTRIBUTION OF BARRIERS
 
     model_exp = EyringModel(T=T)
@@ -1149,7 +1149,8 @@ if __name__ == '__main__':
     # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
 
     # Figure 3
-    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000)
+    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000, output='tmp')
+    exit()
 
     # Figure 4a,b
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
