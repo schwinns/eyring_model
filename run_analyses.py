@@ -754,8 +754,11 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
 
     print(f'\nShowing maximum barriers across parallel paths...')
 
+    title_dict = {'family' : 'Helvetica', 'size' : 8}
+
     n_paths = 2000
     fig1, ax1 = plt.subplots(1,1, figsize=(3.55,3.55/2))
+    fig3, ax3 = plt.subplots(1,1, figsize=(3.55,2.5))
 
     # NORMAL DISTRIBUTION OF BARRIERS
 
@@ -787,13 +790,21 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     # formatting
     ax1.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)')
     ax1.set_ylim(ymin-1, ymax)
-    ax1.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed', fontsize=8)
+    ax1.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed', fontdict=title_dict)
 
-    fig1.savefig('figs/maximum_barriers_normal.pdf')
+    ax3.hist(max_barriers, edgecolor='k', bins=50, lw=0.5, density=True, facecolor='tab:blue')
+    ax3.axvline(effective_barrier, ls='dashed', c='k')
+    ax3.text(effective_barrier+0.4, 0.3, '$\Delta G_{eff}^{\ddag}$')
+    # ax3.set_xlabel('Maximum $\Delta G_{M,i,j}^{\ddag}$ along path $i$ (kcal/mol)')
+    ax3.set_ylabel('Probability')
+    ax3.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed', fontdict=title_dict)
+
+    fig3.savefig('figs/maximum_barriers_normal.pdf')
     
     # EXPONENTIAL DISTRIBUTION OF BARRIERS
 
     fig2, ax2 = plt.subplots(1,1, figsize=(3.55,3.55/2))
+    fig4, ax4 = plt.subplots(1,1, figsize=(3.55,2.5))
 
     model = EyringModel(T=T)
     dist = 'exponential'
@@ -821,10 +832,18 @@ def show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True)
     # formatting
     ax2.set_ylabel('$\Delta G_{M,i,max}^{\ddag}$ (kcal/mol)')
     ax2.set_ylim(ymin-10, ymax)
-    ax2.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed', fontsize=8)
+    ax2.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed', fontdict=title_dict)
     ax2.set_xlabel('Paths')
 
-    fig2.savefig('figs/maximum_barriers_exponential.pdf')
+    ax4.hist(max_barriers, edgecolor='k', bins=50, lw=0.5, density=True, facecolor='tab:orange')
+    ax4.axvline(effective_barrier, ls='dashed', c='k')
+    ax4.text(effective_barrier+2, 0.035, '$\Delta G_{eff}^{\ddag}$')
+    ax4.set_xlabel('Maximum $\Delta G_{M,i,j}^{\ddag}$ along path $i$ (kcal/mol)')
+    ax4.set_ylabel('Probability')
+    ax4.set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed', fontdict=title_dict)
+
+    fig4.savefig('figs/maximum_barriers_exponential.pdf')
+
     plt.show()
 
 
@@ -1149,11 +1168,11 @@ if __name__ == '__main__':
     # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
 
     # Figure 3
-    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000, output='tmp')
-    exit()
+    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000, output='tmp')
 
     # Figure 4a,b
-    # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
+    exit()
     
     # Data for Figure 4c
     # barrier_variance(dH_barrier, dS_barrier, n_paths=n_paths, T=T)
