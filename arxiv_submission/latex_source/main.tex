@@ -1,0 +1,284 @@
+\documentclass[12pt]{article}
+\usepackage{scicite}
+\usepackage{times}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage{soul}
+\usepackage{caption}
+\usepackage{siunitx}
+\usepackage{titling}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{float}
+
+\captionsetup[figure]{labelfont={bf}, labelsep=period, name={Fig.}}
+
+\topmargin 0.0cm
+\oddsidemargin 0.2cm
+\textwidth 16cm 
+\textheight 21cm
+\footskip 1.0cm
+
+\newenvironment{sciabstract}{%
+\begin{quote} \bf}
+{\end{quote}}
+
+\title{Membrane heterogeneity alters our interpretation of effective energy barriers to transport} % must be at most 135 characters
+
+% Need a "short title" that is 50 characters or less
+% Interpreting effective barriers in membranes
+
+% Teaser
+% One-sentence summary that provides a snapshot of the research for non-specialists (must be 125 characters or less)
+% Treating heterogeneity in polymeric membranes realistically shows effective barriers to transport are not what they seem.
+
+\author
+{Nathanael S. Schwindt,$^{1}$ Mor Avidar,$^{2}$ Razi Epsztein,$^{2}$ Anthony P. Straub,$^{3}$\\
+Michael R. Shirts$^{1\ast}$\\
+\\
+\normalsize{$^{1}$Department of Chemical \& Biological Engineering, University of Colorado Boulder,}\\
+\normalsize{Boulder, CO, USA 80309}\\
+\normalsize{$^{2}$Department of Civil and Environmental Engineering, Technion - Israel Institute of Technology,}\\
+\normalsize{Haifa, Israel}\\
+\normalsize{$^{3}$Department of Civil, Environmental, and Architectural Engineering, University of Colorado Boulder,}\\
+\normalsize{Boulder, CO, USA 80309}\\
+\\
+\normalsize{$^\ast$To whom correspondence should be addressed; E-mail:  michael.shirts@colorado.edu.}
+}
+
+\date{}
+
+\begin{document}
+
+\baselineskip24pt
+
+\maketitle 
+
+% Abstract needs to be no more than 150 words and structured in a specific way:
+%       1 sentence: general introduction to the field
+%       1 sentence: detailed background specific to the research
+%       Very brief explanation of objectives/methods/results
+%       1 sentence: main conclusions
+\begin{sciabstract}
+    Major efforts in recent years have been directed towards understanding molecular transport in polymeric membranes. Transition-state theory is an increasingly common approach to explore mechanisms of transmembrane permeation with molecular details, but most applications treat all free energy barriers to transport as equal. This assumption neglects the inherent structural and chemical heterogeneity in polymeric membranes. In this work, we expand the transition-state theory framework to include distributions of membrane free energy barriers. We show that the highest free energy barriers along the most permeable paths, rather than typical paths, provide the largest contributions to the experimentally-observed effective free energy barrier. We show that even moderate, random heterogeneity in molecular barriers will significantly impact how we interpret the mechanisms of transport through membranes. Naive interpretations of experimentally measured barriers can lead to incorrect assumptions about the underlying mechanisms governing transport and miss the mechanisms most relevant to the overall permeability. 
+\end{sciabstract}
+
+\clearpage
+\pagebreak
+
+\section*{Introduction}
+
+Understanding the molecular-level mechanisms that govern transport and selectivity in salt-rejecting membranes, such as those used in nanofiltration (NF) and reverse osmosis (RO), are imperative for the development of next-generation desalination technologies~\cite{epsztein_towards_2020,faucher_critical_2019,epsztein_elucidating_2018}. Numerous models have been proposed over the years to explain the observed transport and selectivity trends in these membranes. However, these models are still insufficient to provide the full picture of the interactions and phenomena that occur under the extreme confinement imposed by the nanometer and sub-nanometer membrane pores~\cite{wang_pore_2021,yaroshchuk_non-steric_2001,biesheuvel_theory_2023,roy_framework_2019}. Developing new theoretical frameworks and approaches is therefore crucial to improve our understanding of molecular transport in polymeric membranes and design future membranes that can address specific requirements~\cite{zhao_differentiating_2021,duchanois_membrane_2021,duchanois_designing_2022}.  
+
+Since the early stages of NF and RO model development, the solution-diffusion model has been the most widely used description for transport through polymeric membranes~\cite{wijmans_solution-diffusion_1995}. In the solution-diffusion model, solutes and solvent must dissolve into the membrane and diffuse through it along a concentration gradient~\cite{wijmans_solution-diffusion_1995}. Recent work has shown that the solution-diffusion model is insufficient (and in some cases inappropriate) for explaining the molecular mechanisms governing RO and NF membrane transport~\cite{heiranian_mechanisms_2023,epsztein_towards_2020,wang_water_2023,biesheuvel_theory_2023}. As a result, a number of studies of RO and NF membranes have examined the utility of measuring energy barriers to membrane permeability based on either the Arrhenius framework~\cite{zhai_roles_2022,lu_dehydration-enhanced_2023,epsztein_elucidating_2018,zhou_intrapore_2020,epsztein_role_2018} or the similar but more rigorous transition-state theory framework~\cite{shefer_applying_2022,white_theoretical_2022,shefer_enthalpic_2021,rickman_temperature-variation_2014,shefer_limited_2022,kingsbury_kinetic_2024} in order to elucidate details of the molecular mechanisms of transport. 
+
+At the simplest level, the Arrhenius activation energy model can be used to understand the energetics of molecular barriers. The Arrhenius equation relates the rate constant $k$ to a pre-exponential factor $A$ and the reaction's activation energy $E_a$, as shown in Eq.~\ref{eq:Arrhenius} where $R$ and $T$ are the gas constant and temperature, respectively.
+\begin{eqnarray}
+    \label{eq:Arrhenius}
+    k &=& A \exp{\left( \frac{-E_a}{R T} \right)} 
+\end{eqnarray}
+Based on this framework, the activation parameters (i.e., the energy barrier and the pre-exponential factor) are often measured since they can be directly extracted from the slope and intercept of the linearized Arrhenius equation. By assuming that membrane permeability is a direct function of some molecular-level energy barrier to transport, the Arrhenius equation can be used to estimate these energy barriers. Permeability ($P$), instead of $k$, is treated as an Arrhenius rate in order to relate it to the activation parameters:
+\begin{equation}
+    \ln P = \ln A -\frac{E_a}{R T}
+\end{equation}
+These temperature dependent activation parameters could in theory differentiate between mechanisms that are indistinguishable with the solution-diffusion parameters because they are expected to correspond to molecular-level phenomena, such as molecular rearrangement or ion dehydration~\cite{shefer_applying_2022}.
+
+A more thermodynamically rigorous model was proposed by Zwolinski, Eyring and Reese, who described membrane transport using transition-state theory in 1949~\cite{zwolinski_diffusion_1949}, directly connecting permeability to enthalpic and entropic barriers. They adopted Eyring's original theory of reaction rates to describe membrane transport in order to probe how free energy barriers govern permeability. Instead of a quasi-equilibrium between the reactants and the activated complexes, they considered a quasi-equilibrium between molecular jumps through the membrane. They demonstrated the applicability of their framework with biological membranes in a simple solution-membrane-solution framework. Fig.~\ref{fig:membrane_illustration} depicts this framework applied to a polymeric membrane. A major shortcoming of this representation of permeability is that it relies on the assumption that membrane diffusion can be described as a series of molecular jumps over equal free energy barriers, or equivalently as a single dominant free energy barrier~\cite{del_castillo_energy-barrier_1979,sigurdardottir_energy_2020,zhou_intrapore_2020}. Assuming the barriers within a membrane are either equal or dominated by a single barrier does not isolate individual mechanisms and ignores the inherent heterogeneity within polymeric membranes. Most notably, such assumption hinders our understanding of the experimentally measured effective free energy barriers and their associated enthalpic and entropic barriers~\cite{richards_experimental_2013,epsztein_role_2018,shefer_enthalpic_2021}. 
+
+% Figure 1
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/labeled_realistic_membrane.pdf}
+    \caption{\textbf{Schematic for the membrane model presented by Zwolinski and coworkers~\cite{zwolinski_diffusion_1949}.} $\lambda_{M}$ is the jump length within the membrane, $\lambda_{sm}$ is the jump length for the solution-membrane interface, $\lambda_{ms}$ is the jump length for the membrane-solution interface, $k_s$ is the rate constant for the solution jumps, $k_{sm}$ is the rate constant for the solution-membrane interfacial jump, $k_{ms}$ is the rate constant for the membrane-solution interfacial jump, and $k_M$ is the rate constant for the membrane jump. $m$ is the number of jumps along the transport coordinate, and $\delta$ is the membrane thickness.}
+    \label{fig:membrane_illustration}
+\end{figure}
+
+In this study, we extend the early work by Eyring and coworkers~\cite{zwolinski_diffusion_1949,giddings_multi-barrier_1958}, presenting an interpretation of the transition-state theory approach that accounts for distributions of free energy barriers that will exist within any realistic membrane. Statistical mechanics tells us that to connect molecular phenomena like jumps between voids in a membrane to macroscopic quantities like permeability we must consider the probability distributions associated with those molecular phenomena. We adapt theories for parallel arrays of pores~\cite{wendt_effect_1976,del_castillo_energy-barrier_1979} to molecular pathways through polymeric membranes, developing a novel expression for membrane permeability in terms of molecular jumps along the transport coordinates of many independent pathways. This expression for permeability expands previous derivations~\cite{zwolinski_diffusion_1949,giddings_multi-barrier_1958} to generalized membrane barrier distributions. We relate the observable, effective membrane free energy barrier and its enthalpic and entropic components to distributions of energy barriers for individual molecular jumps. An effective free energy barrier that averages molecular events has not been developed for this theoretical framework, despite its growing application. Finally, we discuss how our results change how researchers should interpret experimentally observed free energy barriers in membranes, and how heterogeneity even at the molecular level has a significant impact on membrane transport.
+
+\subsection*{Proposed Theoretical Framework}
+
+To construct our framework, we relax two of the main assumptions presented by Zwolinski et al.~\cite{zwolinski_diffusion_1949}, by allowing for distributions of membrane barriers and jump lengths. We apply their equation for flux to a membrane with solution on either side as in Fig.~\ref{fig:membrane_illustration}. We treat all solution jump rates $k_s$ as equal and membrane jump rates $k_{M,j}$ as unequal. Similarly, we treat all solution jump lengths $\lambda_{s}$ as equal and membrane jump lengths $\lambda_{M,j}$ as unequal. The full derivation is provided in the Supplementary Materials. The permeability in terms of the free energy barriers for a single molecular pathway becomes:
+
+\begin{equation}
+    P = \frac{\displaystyle \left( \frac{\lambda_{sm}}{\lambda_{ms}} \right) \left( \frac{k_B T}{h} \right) \exp{\left( \frac{ -\left( \Delta G_{sm}^{\ddagger} - \Delta G_{ms}^{\ddagger} \right)}{R T} \right)}}{\displaystyle \sum_{j=1}^m \left( \frac{1}{\lambda_{M,j}} \right) \exp{\left( \frac{-\Delta G_{M,j}^{\ddagger}}{R T} \right)}}
+    \label{eq:permeability_barriers}
+\end{equation}
+
+\noindent where $P$ is permeability, and $k_B$, $T$, $h$, and $R$ are Boltzmann's constant, temperature, Planck's constant, and the gas constant. $\lambda_{sm}$ and $\lambda_{ms}$ are the jump lengths from solution to membrane and membrane to solution, respectively. Similarly, $\Delta G_{sm}^{\ddagger}$ and $\Delta G_{ms}^{\ddagger}$ are the free energy barriers for the solution-to-membrane jumps and membrane-to-solution jumps. $\Delta G_{M,j}^{\ddagger}$ is the free energy barrier for membrane jump $j$.
+
+The permeability in Eq.~\ref{eq:permeability_barriers} only describes transport along a single molecular pathway. The observed permeability is a combination of all accessible molecular paths, similar to the parallel array of pores described by Wendt et al.~\cite{wendt_effect_1976}. We apply this relationship to our expression for permeability to obtain an area-weighted permeability across many parallel paths. Therefore, the overall permeability for $n$ paths per unit area each with $m_i$ barriers is: 
+
+\begin{equation}
+    P = \sum_{i=1}^{n} \left[ \frac{\displaystyle \left( \frac{A_i}{A_0} \right) \left( \frac{\lambda_{sm}}{\lambda_{ms}} \right) \left( \frac{k_B T}{h} \right) \exp{\left( \frac{ -\left( \Delta G_{sm}^{\ddagger} - \Delta G_{ms}^{\ddagger} \right)}{R T} \right)}}{\displaystyle \sum_{j=1}^{m_i} \left( \frac{1}{\lambda_{M,i,j}} \right) \exp{\left( \frac{-\Delta G_{M,i,j}^{\ddagger}}{R T} \right) }} \right]
+    \label{eq:overall_permeability}
+\end{equation}
+
+where \noindent $A_i$ is the cross-sectional area for path $i$, $A_0$ is the membrane unit area being considered, and $m_i$ is the number of jumps for path $i$. Similar to Eq.~\ref{eq:permeability_barriers}, $\lambda_{M,i,j}$ and $\Delta G_{M,i,j}^{\ddagger}$ are the jump length and free energy barrier for the $j^{th}$ membrane jump on path $i$, respectively.
+
+We express the effective free energy barrier from Eyring's original derivation (Eq.~S5) in terms of distributions of membrane free energy barriers and jump lengths across many parallel paths with different numbers of jumps. To do this, we equate Eq.~S5 to Eq.~\ref{eq:overall_permeability} and solve for $\Delta G_{eff}^{\ddagger}$. Eq.~\ref{eq:effective_barrier} gives the resulting analytical expression for the overall effective free energy barrier, the main theoretical result of this paper.
+
+\begin{equation}
+    \Delta G_{eff}^{\ddagger} = -R T \ln{\left[ \sum_{i=1}^{n} \frac{ \displaystyle \left( \frac{A_i}{A_0} \right) \left( \frac{\delta}{\lambda_{avg}^2} \right) \left( \frac{\lambda_{sm}}{\lambda_{ms}} \right) }{\displaystyle \sum_{j=1}^{m_i} \left( \frac{1}{\lambda_{M,i,j}} \right) \exp{\left( \frac{\Delta G_{M,i,j}^{\ddagger}}{R T} \right) }} \right]} + \left( \Delta G_{sm}^{\ddagger} - \Delta G_{ms}^{\ddagger}\right)
+    \label{eq:effective_barrier}
+\end{equation}
+
+We can decompose this effective free energy barrier into enthalpic and entropic terms. Under the same assumptions as the original expression by Zwolinski et al. but expanding to include parallel paths, in addition to the terms related to averaging the free energy barriers, we find an effective entropic penalty resulting from the fraction of membrane area accessible to permeation. The permeability only depends on the path areas that are accessible to transport. The accessible area to transport is not necessarily the total membrane area, as shown in Eq.~S7. This result is consistent with experimental barriers calculated for ions in NF membranes, where the entropy was attributed to geometric constraints on the void volumes~\cite{epsztein_elucidating_2018,shefer_enthalpic_2021}. Eq.~\ref{eq:entropic_penalty} more clearly shows this ``entropic'' penalty if we additionally assume all paths are identical. Zwolinski et al.~implicitly assumed that the entire area is accessible to transport, or equivalently that $\sum_{i=1}^{n} A_i = A_0$ such that the entropic penalty is 0. The area fraction accessible to transport, because it is not temperature dependent, would manifest as part of the overall effective entropy. When we expand the scenario presented by Zwolinski et al.~to parallel paths, the overall equation becomes:
+\begin{equation}
+    \Delta G_{eff}^{\ddagger} = \left[ \Delta H_{M}^{\ddagger} + \Delta H_{sm}^{\ddagger} - \Delta H_{ms}^{\ddagger} \right] - T \left[ \Delta S_{M}^{\ddagger} + \Delta S_{sm}^{\ddagger} - \Delta S_{ms}^{\ddagger} + R \ln{ \left( \sum_{i=1}^n \frac{A_i}{A_0} \right) } \right] 
+    \label{eq:entropic_penalty}
+\end{equation}
+
+\noindent $\Delta H_M^{\ddagger}$ and $\Delta S_M^{\ddagger}$ are the enthalpic and entropic barriers within the membrane, and similarly, $\Delta H_{sm}^{\ddagger}$, $\Delta S_{sm}^{\ddagger}$, $\Delta H_{ms}^{\ddagger}$, and $\Delta S_{ms}^{\ddagger}$ are the enthalpic and entropic barriers at the solution-membrane ($sm$) and membrane-solution ($ms$) interfaces.
+
+In this study, we focus on the scenario where transport is primarily hindered by diffusion through the membrane, not membrane entry or exit~\cite{zhou_intrapore_2020,song_molecular_2020}. As a result, we treat the jumps across the solution-membrane and membrane-solution interfaces as fast and their associated free energy barriers as negligible and constant across all paths through the membrane. In this case, $\Delta G_{sm}^{\ddagger}$ and $\Delta G_{ms}^{\ddagger}$ are constant for all $i$  paths and small compared to $\Delta G_{M,i,j}^{\ddagger}$. 
+
+In order to examine the consequences of our proposed framework, we need to make choices about the distributions of membrane barriers. We select two common distributions. First, we assume a fixed mean and normally distributed barrier heights around this mean. Physically, this distribution would model membranes with uniform pore structure or homogeneous polymer density at the molecular level. Most molecular pathways would thus have similar environments and jump mechanisms, such that the barriers would be similar for all pathways. Second, we choose exponentially distributed barrier heights to represent membranes with a large amount of heterogeneity. All pores would have regions of unfavorable mechanisms with a few high barriers, as well as regions of low-barrier mechanisms more similar to free diffusion. Further details on the choice of these distributions and their parameters are given in the Materials and Methods section.
+
+\section*{Results}
+\subsection*{The single path effective free energy barrier is highly dependent on the heterogeneity of the individual barrier distributions}
+
+We find that the single path effective free energy barrier is slightly below the maximum free energy barrier of the underlying distributions, and significantly larger than the mean free energy barrier. The single path effective free energy barrier can be related to the distribution of membrane free energy barriers $\Delta G_{M,j}^{\ddagger}$ by assuming a single path $i$ where the entire area is accessible to transport. Fig.~\ref{fig:effective_barriers}A shows where the single path effective free energy barrier would lie for one realization of the barrier distribution, assuming the underlying distributions for the enthalpic and entropic barriers follow normal distributions and exponential distributions. Fig.~\ref{fig:effective_barriers}B shows free energy profiles for single pathways through the membrane with barrier distributions like Fig.~\ref{fig:effective_barriers}A. 
+
+The single path effective free energy barrier is most affected by the largest individual barriers, consistent with Giddings and Eyring's ``kT-cutoff"~\cite{giddings_multi-barrier_1958}. We numerically verify the ``kT-cutoff" model by showing that the largest barriers (i.e. those within $k_B T$ of the maximum barrier) determine the single path effective barrier, as shown in Fig.~\ref{fig:effective_barriers}A. Larger variance in the underlying barrier distributions introduces high outliers that significantly increase the single path effective free energy barrier, as demonstrated with the exponentially distributed barriers. We generalize Scheuplein's conclusions that the locations of barriers along the transport coordinate do not matter and that the overall rate constant can be expressed as a probability-weighted sum of rates to incorporate arbitrary distributions of membrane barriers~\cite{scheuplein_application_1968}. We verify these conclusions numerically in Fig.~\ref{fig:effective_barriers}. In it, we see that the single path effective barrier is slightly below the maximum barrier and does not depend on the locations or orders of the barriers.
+
+% Figure 2 - single path membrane barrier distribution and barrier profiles through the membrane
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig2.pdf}
+    \caption{\textbf{A realization of distributions of membrane barriers along a single path.} (\textbf{A}) For both realizations considered, the effective free energy barrier for a single path lies within the high tail of the distribution, near the maximum barrier. Larger variance in the distribution results in a significantly larger effective barrier. The effective free energy barrier is shown as a dashed vertical line. The mean free energy barrier for both distributions is 12.5 kcal/mol with further discussion in Materials and Methods. We use 200 jumps of 2 \AA~each through a single path at 300 K. (\textbf{B}) The effective free energy barrier along a single path is not dependent on the locations of the barriers. The effective free energy barriers for each path are shown as dashed horizontal lines. We use 100 jumps of 2 \AA~each. Enthalpic and entropic barriers are each drawn independently from the specified distributions and combined to calculate the free energy barrier.}
+    \label{fig:effective_barriers}
+\end{figure}
+
+\subsection*{The overall effective free energy barrier is determined by the highest barriers in the most permeable paths}
+
+% Figure 3 - distributions of barriers, distributions of path effective barriers, and overall effective barrier
+\begin{figure}[ht!]
+    \includegraphics[width=\textwidth]{figures/fig3.pdf}
+    \caption{\textbf{Effective free energy barriers depend on the largest underlying barriers.} The overall effective free energy barrier is near the maximum of the individual free energy barriers and near the minimium of the single path effective free energy barriers. We show distributions of membrane barriers with the same mean at 12.5 kcal/mol. The underlying enthalpic and entropic barriers are all equal (\textbf{A}), normally distributed (\textbf{B}), and exponentially distributed (\textbf{C}). In this figure, the entropic penalty from the accessible area for transport is assumed to be 0. The effective free energy barriers are shown as dashed vertical lines. The overall effective free energy barriers are calculated by Eq.~\ref{eq:effective_barrier}. We use 200 jumps of 2 \AA~each for all 2000 paths.}
+    \label{fig:effective_barriers_parallel}
+\end{figure}
+
+Expanding the model to a membrane comprising many parallel paths, we find the overall effective free energy barrier through the membrane from Eq.~\ref{eq:effective_barrier} lies within the high tail of the underlying barrier distributions and the low tail of the single path effective barriers. In Fig.~\ref{fig:effective_barriers_parallel}, we show the overall effective free energy barriers for 2000 paths compared to the distributions of individual free energy barriers and the distributions of single path effective barriers. If all paths have equal individual barriers as in the original Zwolinski et al.~derivation, the overall effective free energy barrier collapses to be identical to an individual membrane barrier, as shown in Fig.~\ref{fig:effective_barriers_parallel}A. 
+
+Fig.~\ref{fig:effective_barriers_parallel}B and Fig.~\ref{fig:effective_barriers_parallel}C show that the overall effective barrier for the membrane lies near the maximum individual barrier. Equivalently, the overall effective barrier lies near the lowest single path effective barrier. Therefore, when we consider distributions of free energy barriers across many pathways, the overall effective free energy barrier to permeability is not the difference in free energy between the species in solution and the species at the top of the highest potential energy barrier. Rather, it is heavily dependent on the highest barriers within the paths with the lowest single path effective barriers. These single path effective barriers are most dependent on the highest individual barriers along the path. We demonstrate that the overall effective barrier is typically determined by the paths whose highest barriers are relatively low in Fig.~\ref{fig:max_barriers_and_ROC}A and Fig.~\ref{fig:max_barriers_and_ROC}B, where we plot each path's maximum barrier. The overall effective barrier is near the lowest maximum barriers, which is in turn is near, but not at, the top of the distribution of individual barrier heights.
+
+% Figure 4 - effective barrier is most dependent on lowest maximum barriers for parallel paths and ROC curve for flux fraction
+\begin{figure}[ht!]
+    \centering
+    \includegraphics[width=\textwidth]{figures/fig4.pdf}
+    \caption{\textbf{The effective free energy barrier and flux are dominated by paths with low maximum barriers.} (\textbf{A},\textbf{B}) The effective free energy barrier in the case of many pathways is primarily determined by the paths with the smallest maximum barriers. For normally (\textbf{A}) and exponentially (\textbf{B}) distributed enthalpic and entropic barriers, the overall effective free energy barrier is shown as a dashed line. The entropic penalty from the accessible area for transport is assumed to be 0 to highlight the effect of the barrier heights. (\textbf{C}) More heterogeneous free energy landscapes create a few highly permeable paths that dominate the flux, as shown by the fraction of the flux through the most permeable paths. The fluxes are calculated in the case of normally distributed enthalpic and entropic barriers with increasing variance as given by the standard deviation ($\sigma$) of $\Delta G_{M,i,j}^{\ddagger}$. The standard deviation for the enthalpic barriers ranged from \num{1e-4} to 10 kcal/mol, and the standard deviation for the entropic barriers ranged from \num{3.3e-7} to \num{3.3e-2} kcal/mol$\cdot$K.}
+    \label{fig:max_barriers_and_ROC}
+\end{figure}
+
+\subsection*{Heterogeneity in molecular pathways dictates membrane flux}
+
+Intuitively, the overall flux is most determined by the paths with the highest permeability, and Fig.~\ref{fig:max_barriers_and_ROC}C confirms this trend in the transition-state theory model for molecular pathways through a membrane. Importantly, this is true not only for macroscopic defects, but also for mechanistic molecular barriers. If all individual membrane barriers are equal, the flux is evenly distributed across all parallel paths as shown in the straight, dark blue line. As more heterogeneity is introduced from the distributions of membrane barriers, the flux is skewed towards highly permeable paths. Distributions of free energy barriers within the membrane create more favorable paths through the membrane. Physically, paths through easily traversed pores will contribute most to the total permeability, and paths that require energetically unfavorable rearrangement and hopping will contribute least to the permeability. 
+
+For a real membrane, all the molecular pathways will have variance in their energy barriers, jumps, and total path length, and therefore outlier pathways with high permeability will contribute the most to observable energy barriers. Fig.~\ref{fig:vary_everything} gives one realization of the model where the underlying barriers, jump lengths, and the number of jumps are each normally distributed, and we highlight two important free energy profiles through the membrane---the most permeable path (blue) and the path with the smallest maximum barrier (red). The highest permeability paths have low maximum barriers and fewer jumps. In the model, fewer jumps corresponds to fewer opportunities for high outliers in the membrane barrier distribution. These paths might correspond to large pores or defects in the membrane, where molecules can easily take large jumps. A low maximum barrier may represent a pore with a single small constriction, but otherwise relatively open. 
+
+In contrast to the substantial effect from distributions in the barrier thermodynamics, we find the overall effective free energy barrier does not vary much, on the order of 0.5 kcal/mol, with distributions of number of jumps or jump lengths assuming all barrier heights are equal. This finding has a caveat that the overall effective barrier can be decreased moderately when a non-negligible number paths contain only a few (single digit numbers) jumps, where the effects might be as large as 1.5 kcal/mol. However, this is still a small contributing factor compared to the effects from variation in barrier heights. In the case of varying \textit{both} barrier heights and numbers of jumps, we expect a larger difference in the overall effective barrier caused by paths with both small numbers of jumps and no high energy barriers among those jumps. We do not explore this regime quantitatively in this study due to the large number of possible variables.  We present an in-depth discussion of the effects of jump lengths and number of jumps in the Supplementary Materials (Figs.~S2 and S3).
+
+% Figure 5 - realizations for the most permeable path and smallest maximum barrier path
+\begin{figure}[ht!]
+    \includegraphics[width=0.9\textwidth]{figures/fig5.pdf}
+    \caption{\textbf{Smallest maximum barrier path and the most permeable path through a membrane with normal barriers, jump lengths, and jump numbers.} Pathways with low maximum barriers and a few large jumps contribute most to the overall effective barrier. Over a realization of 2000 paths with normally distributed enthalpic and entropic barriers, jump lengths, and number of jumps, the path with the smallest maximum barrier is shown in red, and the path with the highest permeability is shown in blue. While the most permeable path does not have the smallest maximum barrier, its maximum barrier is low and it requires fewer jumps. The overall effective free energy barrier for 2000 paths, shifted by the effective entropic penalty from parallel paths to better show the direct connection of effective barriers to the barrier height distribution, is shown as a dashed line.}
+    \label{fig:vary_everything}
+\end{figure}
+
+In Fig.~\ref{fig:vary_everything}, we show a realization where the most permeable path does not have the smallest maximum barrier. While its maximum barrier is comparatively small, it is not the smallest maximum barrier. We tested how frequently the smallest maximum barrier path is also the most permeable path for both normally distributed and exponentially distributed underlying barriers. For 1000 realizations of normally distributed membrane barriers, the smallest maximum barrier path is the most permeable path in 60.8\% of the realizations. That percentage jumps to 90.0\% for exponentially distributed barriers with the same mean. Of the realizations where the smallest maximum barrier path is not the most permeable path, the maximum barrier in the most permeable path is similar to the smallest maximum barrier 95.9\% of the time for normally distributed barriers and 97.0\% of the time for exponentially distributed barriers. Barriers are considered similar if they are within $k_B T$, as defined by Giddings and Eyring's ``kT-cutoff"~\cite{giddings_multi-barrier_1958}.
+
+\subsection*{Overall effective enthalpic and entropic barriers are larger than the typical barriers experienced by molecules in the membrane}
+
+% Figure 6 - enthalpic, entropic, and free energy effective barriers
+\begin{figure}[ht!]
+    \includegraphics[width=0.9\textwidth]{figures/fig6.pdf}
+    \caption{\textbf{Distributions of enthalpic, entropic, and free energy barriers and their overall effective barriers.} Effective entropic and enthalpic barriers are found towards the tails of their underlying distributions. In these examples, the effective entropic barriers have a larger relative shift compared to the effective enthalpic barriers due to the accessible area entropic penalty. We calculate the overall effective barriers for 22,000 paths from the linearized permeability vs. temperature. Standard errors for the effective barriers and means are shown as lightly shaded regions. Error for the means and normally distributed barriers are too small to be visible.}
+    \label{fig:dH_dS_distributions}
+\end{figure}
+
+Zwolinski and coworkers' expression for permeability (given in our Eq.~S5) has been used to estimate the overall effective enthalpic and entropic barriers to membrane transport. Typically, this equation is linearized so the slope is $-\frac{\Delta H_{eff}^{\ddagger}}{R}$ and the intercept is $\frac{\Delta S_{eff}^{\ddagger}}{R}$. Therefore, the enthalpic and entropic contributions to the permeability can be estimated by simply measuring permeability at a range of temperatures~\cite{shefer_applying_2022}. We follow this approach using permeabilities from our numerical model evaluated at a range of temperatures. Individual barriers at each temperature are drawn from random distributions with the same parameters.
+
+As with free energies, the overall effective enthalpy and entropy calculated from the linearized fit lie in the high magnitude tail of the underlying distributions of enthalpies and entropies. Fig.~\ref{fig:dH_dS_distributions} demonstrates how the measured enthalpic and entropic barriers are larger in magnitude than their respective average barriers in the membrane. These distributions are for 22,000 paths with 200 jumps each for temperatures at 10~K increments between 250~K and 350~K. We simulate 22,000 paths (which would be approximately equivalent to 1 \unit{\micro\meter\squared}, following the same procedure provided in the Supplementary Materials) to reduce the error in the effective barriers for the exponential distributions, since the exponential distributions have higher variance. 
+
+The relative shift in the entropic barrier is larger than that for the enthalpic barrier because the entropic shift also includes the contribution from transport-accessible area, as that contribution is temperature independent and would be interpreted as entropy. Additionally, in Fig.~\ref{fig:dH_dS_distributions}, the mean entropic contribution $\left< -T\Delta S_{M,i,j}^{\ddagger} \right>$ is larger than the enthalpic contribution, further exaggerating the difference in effective barriers. Increasing the variance in the membrane barrier distribution increases the magnitudes of the overall effective enthalpic and entropic barriers, as shown by the higher variance exponential distributions in Fig.~\ref{fig:dH_dS_distributions}. Higher variance introduces higher maximum barriers along single paths, which heavily influences the overall barrier to transport. We find that observable entropic and enthalpic barriers are, again, not representative of the typical or mean mechanisms in the membrane but rather, of the rate-limiting mechanisms along only the most permeable paths.
+
+\subsection*{Implications for experimental study of effective energy barriers in RO and NF membranes}
+
+% Figure 7 - implications on experimental energy barriers
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig7.pdf}
+    \caption{\textbf{Experimental linearized transition-state theory plots and the resulting overall effective enthalpic barriers.} Overall effective barriers measured experimentally are similar across different salts and membranes, indicating that highest barriers in the most permeable paths are also similar. (\textbf{A}) Linearized transition-state theory plots for the permeability of NaCl and NaF in the NF270 membrane and NaCl in the SW30 RO membrane. The least squares fit is shown as a line for each system. (\textbf{B}) Overall effective enthalpic barriers calculated from the slopes in (\textbf{A}) and Fig.~S4. The errors shown are the propagated errors from the linear regression. Experimental conditions during filtration: a single-salt solution of NaCl or NaF at 5 mM, 10-40 \textdegree C, pH 7, 33 bar, and crossflow velocity of 2.13 m/s. }
+    \label{fig:experimental_data}
+\end{figure}
+
+In experimental studies of molecular transport in polymeric membranes, the measured barrier is considered an overall effective parameter that represents the transport of a given solute, and the physical meaning has not been fully established. Based on the current study, we can better analyze and understand effective energy barriers in the context of many individual energy barriers in parallel and series.
+
+To demonstrate the implications our analysis has on the experimental study of effective energy barriers, we extracted effective transition state barriers from permeabilities of a selection of salts in a selection of membranes.  Specifically, 
+we experimentally measured the permeability of sodium chloride (NaCl) in a NF membrane at six temperatures to extract the effective enthalpic barrier for the salt transport from the slope of the linearized transition-state theory plot (Fig.~\ref{fig:experimental_data}A). We also performed a similar measurement for the transport of sodium fluoride (NaF) in the same NF membrane and for NaCl in a RO membrane (Fig.~\ref{fig:experimental_data}A). 
+Finally, we measured the increase of NaCl conductivity with temperature in water and constructed its corresponding linearized transition-state theory plot (Fig.~S4). The effective enthalpic barriers measured for the four cases are shown in Fig.~\ref{fig:experimental_data}B.
+
+Fig.~\ref{fig:experimental_data}B does show an increasing effective enthalpic barrier to transport with a denser medium (water $<$ NF $<$ RO) or a larger and more strongly hydrated species (NaCl $<$ NaF). These trends are intuitive as a denser medium or larger species may require higher molecular adjustments and arrangements during diffusion jumps. The effective enthalpic barriers measured for membrane permeability are slightly higher than typical barrier values reported for water or ion diffusion in water,~\cite{wang_self-diffusion_1953,talekar_temperature_2009} indicating a hindered diffusion compared to free diffusion in water. However, the statistical uncertainty is large, indicating that any differences in the enthalpic barrier heights are likely small and do not appear to be significantly affected by the substantial change in ion size, nor by membrane density. This observation supports the picture that the average ion environment only loosely affects the transport along the most important paths. For example, both the NF and RO membranes likely have larger voids that dominate the flux and result in similar effective barriers, despite the significant difference in the chemistry of the membranes.
+
+Additionally, the effective barriers to ion transport measured in the membranes are much lower than typical activation energies reported for diffusion in denser polymers, such as Nafion, polyimide, and perfluorosulfonate~\cite{das_metal_1994,yeager_ionic_1979,xue_diffusion_2017}. The barriers in these polymers would likely be associated with high energy pathways through dense networks. While in the membranes, the barriers would likely be associated with larger pores (or voids) where molecules can pass through while being relatively unaffected by the polymer environment. 
+
+Our finding that the overall effective energy barrier is dictated by the highest barrier in the most permeable path is also supported by prior experimental data examining the heterogeneity of polyamide RO membranes~\cite{culp_nanoscale_2021}.  Culp et al.~identified water diffusion pathways in polyamide RO membranes and estimated the local flux along those pathways. They found that the average diffusion coefficient in the polymer was unable to predict membrane water permeability, rather that the nanoscale heterogeneity controlled membrane permeability. They identified the same two levels of heterogeneity that we explore, namely heterogeneity across parallel paths and heterogeneity within a single path in the direction of transport. 
+
+Interestingly, the membrane samples studied had pathways through the membrane with significantly more heterogeneity along pathways than between pathways, i.e. each of the parallel pathways had highly correlated flux as a function of distance through the membrane, rather than being random, as in our model, because of inhomogeneities at the mesoscale. For such paths, sections along the transport coordinate with very low local flux (high outlier barriers) significantly limited the total flux along all paths. On the other hand, the high permeability membranes had narrower distributions of local flux along the transport coordinate. Consequently, the most permeable membranes had barrier distributions with low variance, such that there were not many outliers and the highest barriers were relatively low.   
+
+\section*{Discussion}
+
+In this work, we find that even moderate, statistically random heterogeneity in energy barriers will significantly impact how we interpret the mechanisms of transport through the membrane. In polymeric membranes used for RO and NF, structural and chemical heterogeneity, such as non-uniform pores or charged functional groups, introduce a wide variety of free energy barriers to permeability~\cite{freger_nanoscale_2003,shefer_enthalpic_2021}. For a cross-section of membrane, the overall effective barrier is most dependent on the highest barriers in the most permeable paths with smaller contributions from the other parallel paths. The enthalpic and entropic components, and thus the overall free energy barrier increase with increasing heterogeneity in the membrane.
+
+To design membranes with desired separation capabilities, we must control the highest barriers to transport in the most permeable paths. Defects or voids in the membrane along the transport coordinate will significantly increase the permeability by decreasing the highest barriers to transport through individual paths, leading to flux hot spots~\cite{ramon_transport_2013}. Designing membranes with more uniform energy barriers will distribute flow through more paths. Experimentally, increasing the homogeneity of the polyamide films has been shown to increase water flux and permselectivity. 
+
+There are a number of limitations to this study due to the approximations required to perform numerical experiments, but the main conclusions of the work are unaffected since the analysis is generalized to be broadly applicable. We explored two physically motivated distributions of barrier heights and jumps; in virtually all cases, these distributions are unknown, and we may not have explored the parameter ranges that are most physically relevant. We do not consider the coupled diffusion of multiple species, which can constrain transport via requirements of electroneutrality for ions. We also do not include external driving forces in our analysis, but previous work has developed this theory, which effectively scales the energy barriers~\cite{zwolinski_diffusion_1949,del_castillo_energy-barrier_1979}. The magnitudes of the barriers would change, but our interpretation of effective energy barriers would not. Additionally, we treat the interfacial barriers as negligible in our analysis, but some studies have suggested these may be significant factors in modeling membrane transport~\cite{kingsbury_kinetic_2024}. To include the effect of the interfaces, there are two significant scenarios to address. In the first case, interfacial barriers dominate the transport. Only the interfacial barriers and their heterogeneity across parallel paths would need to be considered. In the second case, interfacial barriers are of similar magnitude to barriers within the membrane. But because the order of the individual barriers does not change the interpretation of the single path effective free energy barrier, these barriers can be included in the overall framework with corresponding distributions. A remaining important limitation is that we assumed independent and separate pathways through the membrane, but in reality, the molecular pathways may merge and interconnect. Incorporating this additional heterogeneity is beyond the scope of the current study, but can be easily extended to introduce correlated barrier distributions between paths and consideration of topological effects, as for example in the work of Culp et al.~\cite{culp_nanoscale_2021}. It would be difficult to determine a priori appropriate covariances for any given polymeric membrane. However, by treating the molecular jumps as resistances, many different topologies could be explored with parallel-series circuit models. This circuit model theory is well-developed for interconnected pathway flows and can be readily expanded to include varying barriers ~\cite{mishra_effective_2021,zhang_equivalent_2019,tan_resistance_2017,tan_equivalent_2013}. 
+
+Our work shows that the conventional theoretical framework for transition-state theory energy barriers leads to incorrect interpretations of experimental effective free energy, enthalpic, and entropic barriers. Even analysis of experimental results based on transition-state theory will produce effective barriers that are not easily related to mechanistic details at the atomistic level. In particular, the observed effective enthalpies and entropies do not necessarily correspond to either the most frequent or the highest mechanistic barriers occurring in the system. For example, attempts to match barriers to specific enthalpies of ion dehydration within the membrane are unlikely to be successful, as the free energy barrier of an individual mechanistic event may be several kcal/mol different from the measured effective free energy barrier, and thus chemical design attempts may focus on the wrong interactions.  Additionally, attempts to understand membrane barriers by looking at typical events in the membrane via simulation may focus on the wrong events, as the typical free energy barrier is not necessarily relevant in the overall permeability. Similarly, the highest barriers encountered in membrane pores may not be relevant, as it is only the highest barriers on the most permeable paths that primarily contribute to the experimentally observable barrier. 
+
+\section*{Materials and Methods}
+
+\subsection*{Numerical methods}
+
+We numerically evaluate our expanded transition-state theory model for membrane permeability by drawing heights for each of the individual enthalpic and entropic barriers from independent random distributions. In this paper, we use two commonly occurring probability distributions to represent the distribution of energy barriers, normal (Gaussian) and exponential distributions, for both enthalpic and entropic barriers. Normal and exponential distributions occur in many natural phenomena, and represent extremes of possible behavior. Normal distributions serve as well-behaved two-sided distributions around a set mean, whereas exponential distributions are one-sided with highest probability near zero and long tails. 
+
+We draw heights of the enthalpic barriers from distributions with mean 3.5 kcal/mol, which corresponds to the observed effective enthalpic barrier for chloride within NF membranes at 300~K~\cite{pavluchkov_indications_2022}, and we draw entropic barriers from distributions with mean -0.03 kcal/mol$\cdot$K, which corresponds to the observed effective entropic barrier for chloride under the same conditions~\cite{pavluchkov_indications_2022}. This combination results in an effective free energy of $\Delta G_{eff}^{\ddag} = \Delta H_{eff}^{\ddag} - T \Delta S_{eff}^{\ddag}$ = 12.5 kcal/mol, at 300~K. Unless otherwise specified, the standard deviation for the normally distributed enthalpic barriers is 1.17 kcal/mol, and the standard deviation for the normally distributed entropic barriers is 0.01 kcal/mol$\cdot$K. These standard deviations ensure the normally distributed barriers represent membranes with less heterogeneity than the exponentially distributed barriers. Exponential distributions are defined by a single parameter, so specifying their mean is enough to fully define them.
+
+In simulating membranes with multiple paths, we use \num{2e-4} as an estimate for the number of paths per $\text{\AA}^2$. This estimate is an order of magnitude smaller than the estimated packing density of single-walled carbon nanotubes with a diameter of 0.5 nm (more information provided in the Supplementary Materials), to account for the heterogeneity of polymer membranes. Here, we show trends for 2000 paths through the membrane unless otherwise stated, which roughly corresponds to a unit area of 0.1 \unit{\um\squared}, enough to converge average results across a distribution of paths. See Fig.~S1 for determination of the number of paths needed for convergence. The code implementation for our numerical analysis is on Github at \url{https://github.com/shirtsgroup/eyring_model}. 
+
+\subsection*{Crossflow filtration experiments}
+
+Filtration experiments were performed with two types of flat-sheet commercial membranes in a crossflow mode -- a loose polyamide NF membrane (NF270, Dow FilmTec) and a tight polyamide RO membrane (SW30, Dow FilmTec). Single-salt solutions of NaCl and NaF at 5 mM were used as feed solutions. The filtration experiments were carried out at pH 7, with an applied pressure of 33 bar and a crossflow velocity of 2.13 m/s. In order to calculate transition-state theory barriers, the salt flux was measured at 6 temperatures from 10 \textdegree C to 40 \textdegree C, from which the permeability at these temperatures was calculated using
+\begin{equation}
+    P = \frac{J_s}{C_m - C_p}
+    \label{eq:experimental_permeability}
+\end{equation}
+\noindent where $J_s$ is the salt flux and $C_m$ and $C_p$ are the salt concentrations on the membrane surface in the feed side and in the permeate solution, respectively. Concentration polarization on the membrane surface and $C_m$ were evaluated using previously reported methods given also in the Supplementary Materials~\cite{peer-haim_adverse_2023}. The enthalpic and entropic barriers were extracted from the slope and intercept of the linearized Eyring plot, as shown previously~\cite{shefer_limited_2022}. These experiments were replicated 3 times for each temperature.
+
+\subsection*{Measurement of barriers to transport for salt in water}
+
+Energy barriers to transport of salt in water were calculated by measuring the conductivity (Eutech Instruments, CON2700) of 5~mM sodium chloride solutions at 4 different temperatures between 25 \textdegree C and 45 \textdegree C. The barriers for the conductivity were then extracted using the same method applied to calculate the barriers of the permeability. The resulting transition-state theory plot for conductivity in water is provided in the Supplementary Materials.
+
+\clearpage
+\pagebreak
+
+\bibliographystyle{Science} % edited based on https://www.cs.unm.edu/~aaron/blog/archives/2014/12/using_latex_for_1.htm
+\bibliography{eyring_model}
+
+\section*{Acknowledgments}
+
+\noindent \textbf{Funding:} This material is based upon work supported by the National Science Foundation under Grant No. CBET-2136835 and the United States-Israel Binational Science Foundation (BSF), Jerusalem, Israel (grant No. 2021615).
+
+\noindent \textbf{Author contributions:} NSS and MRS designed the study. NSS performed all numerical experiments. MRS supervised the numerical research. 
+MA collected the experimental data. MA, NSS, and MRS analyzed the experimental data. NSS, RE, APS and MRS revised and edited the manuscript. RE supervised the experimental research.
+
+\noindent \textbf{Competing interests:} The authors declare that they have no competing interests.
+
+\noindent \textbf{Data and materials availability:} All data needed to evaluate the conclusions in the paper are present in the paper and/or the Supplementary Materials. All code to generate and analyze the data and figures can be found at \url{https://github.com/shirtsgroup/eyring_model}.
+
+\include{SM.tex}
+
+\end{document}
