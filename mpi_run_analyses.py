@@ -50,7 +50,7 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
     if rank == 0:
         print(f'\n{nprocs} processors calculating the path convergence of {dist} distributions of barriers')
 
-        fig1, ax1 = plt.subplots(1,1)
+        fig1, ax1 = plt.subplots(1,1, figsize=(3.55,3.55))
         
         # Increasing number of paths to see how effective barrier changes (when it stabilizes)
         n_paths = np.array([50,100,200,300,400,500,600,700,800,900,1000,1100,1200,1300,1400,1500,
@@ -151,11 +151,9 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
         np.savetxt(f'avg_convergence_{dist}_{realizations}iter.csv', data, delimiter=',')
         ax1.scatter(n_paths, avg_barrier / realizations, c='r', label='average over paths')
 
-        ax1.set_xlabel('Number of Paths', fontsize=16)
-        ax1.set_ylabel('$\Delta G_{eff}^{\ddag}$ (kcal/mol)', fontsize=16)
-        ax1.tick_params('both', labelsize=14)
-        plt.legend(fontsize=16)
-        fig1.savefig('effective_barrier_convergence.png')
+        ax1.set_xlabel('Number of Paths')
+        ax1.set_ylabel('$\Delta G_{eff}^{\ddag}$ (kcal/mol)')
+        fig1.savefig(f'figs/effective_barrier_convergence_{dist}.pdf')
         plt.show()
 
     my_end = timer()
@@ -165,6 +163,9 @@ def path_convergence(realizations, dH_barrier, dS_barrier, dH_sigma, dS_sigma, d
 if __name__ == "__main__":
 
     plt.rcParams['text.usetex'] = True
+    plt.rcParams['font.family'] = 'Helvetica'
+    plt.rcParams['font.size'] = 8
+    plt.rc('text.latex', preamble=r'\usepackage[cm]{sfmath}')
 
     # Inputs
     iters = 100
@@ -176,7 +177,7 @@ if __name__ == "__main__":
     dS_sigma = -dS_barrier/3
 
     # normal distributions
-    # path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
+    path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='norm', T=T, multi=multi)
 
     # exponential distributions
     path_convergence(iters, dH_barrier, dS_barrier, dH_sigma, dS_sigma, dist='exp', T=T, multi=multi)
