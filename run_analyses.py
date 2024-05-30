@@ -20,7 +20,7 @@ h = 6.62607 * 10**-34      # Planck (m^2 kg / s)
 global R
 R = 1.9858775 * 10**-3     # universal gas (kcal / mol K)
 
-def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_paths=2000, n_jumps=200, T=300, multi=True, output='figs/hist_effective_individual_barriers_no_penalty.pdf'):
+def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=2000, n_jumps=200, T=300, multi=True, output='figs/hist_effective_individual_barriers_no_penalty.pdf'):
 
     print(f'\nCalculating effective barriers and fractions of permeability for {n_paths} paths through the membrane...')
 
@@ -61,7 +61,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
     df_equal.loc[len(df_equal.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
 
     sns.histplot(effective_barriers, color='tab:gray', linewidth=1, ax=ax[0], 
-                 stat='density', alpha=1, fill=False, label='path effective barriers')
+                 stat='density', alpha=1, fill=False, label='single path effective barriers')
     
     # NORMAL DISTRIBUTION OF BARRIERS
 
@@ -100,7 +100,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
     df_norm.loc[len(df_norm.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
 
     sns.histplot(effective_barriers, binwidth=1, color='tab:blue', linewidth=1, ax=ax[1],
-                  stat='density', alpha=1, fill=False, label='path effective barriers')
+                  stat='density', alpha=1, fill=False, label='single path effective barriers')
     
     # EXPONENTIAL DISTRIBUTION OF BARRIERS
 
@@ -137,7 +137,7 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
     df_exp.loc[len(df_exp.index)] = [0,0,0,0,0,0] # add zero row for ROC curve
 
     sns.histplot(effective_barriers, binwidth=1, color='tab:orange', linewidth=1, ax=ax[2],
-                  stat='density', alpha=1, fill=False, label='path effective barriers')
+                  stat='density', alpha=1, fill=False, label='single path effective barriers')
     
     # PLOTTING
 
@@ -145,17 +145,14 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
     ax[0].axvline(effective_barrier_equal, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
     ax[0].legend(frameon=False)
     ax[0].set_ylabel('Density')
-    # ax[0].set_title('Series of equal barriers, standard deviation = 0 kcal/mol')
 
     ax[1].axvline(effective_barrier_norm, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
     ax[1].legend(frameon=False)
     ax[1].set_ylabel('Density')
-    # ax[1].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ normally distributed, standard deviation = 3 kcal/mol')
 
     ax[2].axvline(effective_barrier_exp, ls='dashed', c='k', label='$\Delta G_{eff}^{\ddag}$', lw=1)
     ax[2].legend(frameon=False)
     ax[2].set_ylabel('Density')
-    # ax[2].set_title('$\Delta H^{\ddag}_{M,i,j}$, $\Delta S^{\ddag}_{M,i,j}$ exponentially distributed, standard deviation = 10 kcal/mol')
 
     ax[2].set_xlabel('$\Delta G_{m,i,j}^{\ddag}$ (kcal/mol)')
     ax[2].set_xlim(0,100)
@@ -165,24 +162,21 @@ def parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, n_pat
     print(f'Means: {mean_equal} (equal), {mean_norm} (normal), {mean_exp} (exponential)')
     print(f'Standard deviations: {std_equal} (equal), {std_norm} (normal), {std_exp} (exponential)')
     print(f'Effective barriers: {effective_barrier_equal} (equal) {effective_barrier_norm} (normal), {effective_barrier_exp} (exponential)')
-    
-    # fig3, ax3 = plt.subplots(1,1, figsize=(6,6))
-    # sns.lineplot(data=df_equal, x='pore_fraction', y='flux_fraction', ax=ax3, label='equal')
-    # sns.lineplot(data=df_norm, x='pore_fraction', y='flux_fraction', ax=ax3, label='normal')
-    # sns.lineplot(data=df_exp, x='pore_fraction', y='flux_fraction', ax=ax3, label='exponential')
-    # ax3.set_xlabel('fraction of the pores')
-    # ax3.set_ylabel('fraction of the flux')
 
     plt.show()
 
     return model_equal, model_norm, model_exp
 
 
-def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=300, multi=True, seed=None):
+def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True, seed=None, plot=True, verbose=False):
 
-    print(f'\nComparing effective barriers for a single path through the membrane...')
+    if verbose:
+        print(f'\nComparing effective barriers for a single path through the membrane...')
 
     fig, ax = plt.subplots(1,1, figsize=(7.25,1.95))
+
+    dG_eff = np.zeros(2)
+    dG_eff_kT = np.zeros(2)
 
     # Generate normally distributed barriers
     dist = 'normal'
@@ -192,11 +186,26 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
     model = Path(T=T, n_jumps=200)
     model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params, seed=seed)
-    dG_eff = model.calculate_effective_barrier()
-    sns.histplot(model.membrane_barriers, color='tab:blue', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='normal barriers', linewidth=0.5)
-    ymin, ymax = plt.ylim()
-    ax.axvline(dG_eff, ls='dashed', c='tab:blue')
-    ax.text(dG_eff*1.05, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:blue')
+    dG_eff[0] = model.calculate_effective_barrier()
+    if plot:
+        sns.histplot(model.membrane_barriers, color='tab:blue', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='normal barriers', linewidth=0.5)
+        ymin, ymax = plt.ylim()
+        ax.axvline(dG_eff[0], ls='dashed', c='tab:blue')
+        ax.text(dG_eff[0]*1.05, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:blue')
+
+    barriers = model.membrane_barriers
+    barriers_kT = barriers[barriers >= barriers.max() - R*T]
+
+    model.membrane_barriers = barriers_kT
+    model.n_jumps = len(barriers_kT)
+    model.generate_jump_distribution(dist_params={'mu' : 2})
+    dG_eff_kT[0] = model.calculate_effective_barrier()
+    dG_eff_kT[0] = barriers_kT.mean()
+
+    if verbose:
+        print('Normally distributed underlying barriers:')
+        print(f'\tEffective barrier, all barriers = {dG_eff[0]:.6f}')
+        print(f'\tEffective barrier, kT-cutoff barriers = {dG_eff_kT[0]:.6f}\n')
 
     # Generate exponentially distributed barriers
     dist = 'exponential'
@@ -204,19 +213,38 @@ def compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_ba
 
     model = Path(T=T)
     model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params, seed=seed)
-    dG_eff = model.calculate_effective_barrier()
-    sns.histplot(model.membrane_barriers, color='tab:orange', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='exponential barriers', linewidth=0.5)
-    ymin, ymax = plt.ylim()
-    ax.axvline(dG_eff, ls='dashed', c='tab:orange')
-    ax.text(dG_eff*1.01, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:orange')
+    dG_eff[1] = model.calculate_effective_barrier()
+    if plot:
+        sns.histplot(model.membrane_barriers, color='tab:orange', stat='probability', edgecolor='k', binwidth=1, bins=50, alpha=0.5, ax=ax, label='exponential barriers', linewidth=0.5)
+        ymin, ymax = plt.ylim()
+        ax.axvline(dG_eff[1], ls='dashed', c='tab:orange')
+        ax.text(dG_eff[1]*1.01, ymax*0.9, '$\Delta G_{eff}^{\ddag}$', color='tab:orange')
+    
+    barriers = model.membrane_barriers
+    barriers_kT = barriers[barriers >= barriers.max() - R*T]
+
+    model.membrane_barriers = barriers_kT
+    model.n_jumps = len(barriers_kT)
+    model.generate_jump_distribution(dist_params={'mu' : 2})
+    dG_eff_kT[1] = model.calculate_effective_barrier()
+
+    if verbose:
+        print('Normally distributed underlying barriers:')
+        print(f'\tEffective barrier, all barriers = {dG_eff[1]:.6f}')
+        print(f'\tEffective barrier, kT-cutoff barriers = {dG_eff_kT[1]:.6f}\n')
     
     # formatting
-    ax.set_xlabel('$\Delta G_{m,j}^{\ddag}$ (kcal/mol)')
-    ax.set_ylabel('Density')
-    ax.set_xlim(0,)
-    plt.legend(loc='center', frameon=False, ncol=1)
-    fig.savefig('figs/effective_barrier_distribution_comparison.pdf')
-    plt.show()
+    if plot:
+        ax.set_xlabel('$\Delta G_{m,j}^{\ddag}$ (kcal/mol)')
+        ax.set_ylabel('Density')
+        ax.set_xlim(0,)
+        plt.legend(loc='center', frameon=False, ncol=1)
+        fig.savefig('figs/effective_barrier_distribution_comparison.pdf')
+        plt.show()
+        plt.close()
+
+    return dG_eff, dG_eff_kT
+
 
 def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True, seeds=[None]):
 
@@ -1164,13 +1192,25 @@ if __name__ == '__main__':
     # Choose what analyses to run
 
     # Figure 2a
-    # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, seed=12456)
+    # compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, seed=12456)
+    
+    # compare kT-cutoff effective barrier to all-barriers effective barrier
+    # niter = 1000
+    # dG_eff = np.zeros((niter,2))
+    # dG_eff_kT = np.zeros((niter,2))
+    # for i in tqdm(range(niter)):
+    #     dG_eff[i,:], dG_eff_kT[i,:] = compare_effective_barriers(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, plot=False, verbose=False)
+
+    # pct_larger = (dG_eff_kT - dG_eff)/dG_eff*100
+    # print('dG_eff from kT-cutoff is __ percent larger than dG_eff from all barriers:')
+    # print(f'\tFor normally distributed barriers, {pct_larger[:,0].mean()} +/- {pct_larger[:,0].std()}')
+    # print(f'\tFor exponentially distributed barriers, {pct_larger[:,1].mean()} +/- {pct_larger[:,1].std()}')
     
     # Figure 2b
     # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, seeds=[12456])
 
     # Figure 3
-    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, dG_barrier, T=T, multi=multi, n_jumps=200, n_paths=2000, output='figs/hist_effective_individual_barriers_no_penalty.pdf')
+    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, n_jumps=200, n_paths=2000, output='figs/hist_effective_individual_barriers_no_penalty.pdf')
 
     # Figure 4a,b
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
@@ -1204,7 +1244,7 @@ if __name__ == '__main__':
     # print(f'Of the {n_iter-smallest_max_is_most_perm} iterations where the smallest maximum barrier path is not the most permeable path, the maximum barrier of the most permeable path is within kT of the smallest maximum barrier {kT_cutoff.sum() / kT_cutoff.shape[0]*100:.2f}% of the time')
 
     # Figure 6
-    estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)  
+    # estimate_dH_dS(dH_barrier, dS_barrier, dH_sigma, dS_sigma, n_paths=22000, area=1e8, plot=True)  
     exit()  
 
     # Unused
