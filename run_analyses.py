@@ -262,13 +262,13 @@ def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True,
                 'cov' : np.array([[dH_sigma**2,0],
                                   [0,dS_sigma**2]])
                 }
-        model = Path(T=T, n_jumps=100)
+        model = Path(T=T, n_jumps=200)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params, seed=seeds[i])
         dG_eff = model.calculate_effective_barrier()
 
         # get jumps and barriers for plotting
-        jumps = model.jump_lengths.cumsum()
-        barriers = model.membrane_barriers
+        jumps = model.jump_lengths[100:].cumsum()
+        barriers = model.membrane_barriers[100:]
 
         # create a cubic spline so the barrier profile is smooth
         path_spline = CubicSpline(jumps, barriers, bc_type='natural')
@@ -288,12 +288,12 @@ def plot_paths(n, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=300, multi=True,
         # repeat for exponentially distributed barriers
         dist = 'exponential'
         params = {'beta'  : np.array([dH_barrier, dS_barrier])}
-        model = Path(T=T, n_jumps=100)
+        model = Path(T=T, n_jumps=200)
         model.generate_membrane_barriers(dist=dist, multi=multi, dist_params=params, seed=seeds[i])
         dG_eff = model.calculate_effective_barrier()
 
-        jumps = model.jump_lengths.cumsum()
-        barriers = model.membrane_barriers
+        jumps = model.jump_lengths[100:].cumsum()
+        barriers = model.membrane_barriers[100:]
 
         path_spline = CubicSpline(jumps, barriers, bc_type='natural')
         xs = np.linspace(0, jumps.max(), num=2000)
@@ -1207,10 +1207,10 @@ if __name__ == '__main__':
     # print(f'\tFor exponentially distributed barriers, {pct_larger[:,1].mean()} +/- {pct_larger[:,1].std()}')
     
     # Figure 2b
-    # plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, seeds=[12456])
+    plot_paths(1, dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, seeds=[12456])
 
     # Figure 3
-    parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, n_jumps=200, n_paths=2000, output='figs/hist_effective_individual_barriers_no_penalty.pdf')
+    # parallel_pores(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi, n_jumps=200, n_paths=2000, output='figs/hist_effective_individual_barriers_no_penalty.pdf')
 
     # Figure 4a,b
     # show_maximums(dH_barrier, dS_barrier, dH_sigma, dS_sigma, T=T, multi=multi)
